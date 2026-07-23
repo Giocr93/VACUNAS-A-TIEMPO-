@@ -1,0 +1,13 @@
+VACUNAS A TIEMPO v1.5.3
+Motor Clínico de Vacunación 2026
+
+CAMBIOS
+- Se agregó cálculo de fecha mínima y fecha objetivo para cada regla del motor.
+- Se muestra una cuenta regresiva cuando la dosis todavía es futura.
+- Se muestran los días transcurridos después de la fecha objetivo cuando la dosis está pendiente.
+- Para reglas con edad máxima se muestra la fecha límite exclusiva calculada para el paciente.
+- La exportación CSV del motor ahora incluye fechas exactas y diferencia de días.
+- Se conserva íntegramente la lógica clínica y los datos de la versión 1.5.2.
+
+NOTA DE SEGURIDAD
+Esta versión no modifica los criterios clínicos existentes. El motor es apoyo operativo y no sustituye la revisión de cartilla, antecedentes, contraindicaciones ni lineamientos institucionales vigentes.

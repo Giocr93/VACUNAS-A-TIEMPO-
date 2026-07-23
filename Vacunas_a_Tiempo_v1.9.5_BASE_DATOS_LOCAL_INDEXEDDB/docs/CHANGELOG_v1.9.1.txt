@@ -1,0 +1,13 @@
+VACUNAS A TIEMPO v1.9.1
+MOTOR DE CONSISTENCIA CLÍNICA
+
+- Nuevo módulo Consistencia clínica.
+- Detecta fechas futuras o anteriores al nacimiento.
+- Detecta posibles registros duplicados.
+- Revisa dosis fuera de secuencia y dosis del mismo biológico en la misma fecha.
+- Advierte lotes caducados para la fecha de aplicación.
+- Identifica aplicaciones actuales sin lote y registros sin vía o sitio.
+- Resumen integrado dentro del expediente.
+- Conserva todas las funciones de v1.9.0.
+
+La revisión automática apoya, no sustituye, el criterio profesional ni los lineamientos vigentes.

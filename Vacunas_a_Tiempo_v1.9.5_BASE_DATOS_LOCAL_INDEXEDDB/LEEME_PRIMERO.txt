@@ -1,0 +1,7 @@
+VACUNAS A TIEMPO v1.9.5 — BASE LOCAL INDEXEDDB
+
+1. Descomprime toda la carpeta.
+2. Ejecuta INICIAR_SERVIDOR.bat.
+3. Inicia sesión con admin / admin123.
+
+Esta versión conserva la interfaz estable y agrega una base IndexedDB local, compatible con los datos anteriores. Todavía no instala Service Worker para evitar problemas de caché mientras se valida esta etapa.

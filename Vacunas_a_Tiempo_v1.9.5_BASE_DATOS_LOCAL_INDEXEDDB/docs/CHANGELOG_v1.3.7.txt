@@ -1,0 +1,15 @@
+VACUNAS A TIEMPO v1.3.7
+
+CAMBIOS PRINCIPALES
+- Se reemplazó el intento de OCR nativo del navegador por OCR real con Tesseract.js.
+- Reconocimiento de texto en español desde fotografías o imágenes.
+- Barra de progreso durante la carga y el reconocimiento.
+- Mensaje de confianza aproximada del texto detectado.
+- Análisis automático del texto para localizar CURP, fecha de nacimiento, sexo y nombre probable.
+- Mejor manejo de errores y mensajes claros cuando falla la conexión o la imagen no es legible.
+- Se mantiene la revisión humana antes de transferir datos al expediente.
+
+IMPORTANTE
+- El OCR requiere conexión a internet para cargar Tesseract.js y el modelo de idioma español.
+- El resto del sistema y los datos continúan funcionando localmente.
+- Para mejores resultados usa fotografías derechas, cercanas, con buena iluminación y sin reflejos.

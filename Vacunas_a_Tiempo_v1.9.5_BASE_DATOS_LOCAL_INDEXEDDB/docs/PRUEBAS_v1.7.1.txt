@@ -1,0 +1,9 @@
+PRUEBAS REALIZADAS
+
+1. Validación de sintaxis de todos los bloques JavaScript: correcta.
+2. Verificación de estructura del respaldo integral y restauración: correcta.
+3. Verificación de compatibilidad con formato de respaldo anterior: incluida.
+4. Verificación de vista previa de captura múltiple: incluida.
+5. Verificación de integridad del archivo ZIP: correcta.
+
+NOTA: abrir siempre la aplicación desde una carpeta descomprimida.

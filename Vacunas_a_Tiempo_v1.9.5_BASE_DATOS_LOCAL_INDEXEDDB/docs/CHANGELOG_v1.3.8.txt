@@ -1,0 +1,23 @@
+VACUNAS A TIEMPO — v1.3.8
+Fecha: 19/07/2026
+
+CAPTURA INTELIGENTE
+- Se reparó la inicialización de Tesseract.js usando rutas explícitas para worker, núcleo e idioma español.
+- Se añadió diagnóstico paso a paso: archivo, PDF, motor OCR, idioma y reconocimiento.
+- Los errores ahora muestran la causa técnica en pantalla.
+- Se agregó preprocesamiento de contraste y blanco/negro.
+- Se añadió restauración de la vista original.
+- Se mejoró la corrección de errores frecuentes al reconocer CURP.
+
+PDF
+- Ahora admite archivos PDF además de JPG, PNG y WEBP.
+- Muestra el número total de páginas.
+- Permite navegar entre páginas y ejecutar OCR sobre la página visible.
+- Renderiza las páginas a mayor resolución antes del reconocimiento.
+
+SEGURIDAD
+- Los datos reconocidos siguen requiriendo revisión antes de guardarse.
+- El programa no guarda automáticamente la imagen o el PDF.
+
+NOTA
+El OCR y el lector PDF necesitan conexión a internet para cargar sus motores. Los demás módulos continúan funcionando localmente.

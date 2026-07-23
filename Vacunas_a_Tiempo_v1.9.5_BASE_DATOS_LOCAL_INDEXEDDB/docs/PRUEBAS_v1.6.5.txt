@@ -1,0 +1,7 @@
+PRUEBAS RECOMENDADAS
+1. Abrir un expediente desde Pacientes y desde Censo nominal.
+2. Registrar una vacuna aplicada hoy y confirmar que el lote baja una dosis.
+3. Registrar una vacuna histórica y confirmar que el inventario no cambia.
+4. Agregar 20 filas y confirmar que no permite una fila 21.
+5. Buscar un biológico escribiendo parte del nombre.
+6. Crear un respaldo y volver a abrir la aplicación.

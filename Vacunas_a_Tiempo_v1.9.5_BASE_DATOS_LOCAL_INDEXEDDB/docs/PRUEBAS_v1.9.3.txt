@@ -1,0 +1,10 @@
+PRUEBAS RECOMENDADAS v1.9.3
+
+1. Abrir Cartilla digital y seleccionar un paciente con fecha de nacimiento.
+2. Confirmar que se muestran todas las dosis configuradas.
+3. Seleccionar una dosis aplicada y revisar sus datos.
+4. Seleccionar una dosis pendiente y revisar la explicación.
+5. Probar los botones de edad y regresar a Hoy.
+6. Usar Preparar captura en una dosis disponible.
+7. Abrir un expediente y usar el botón Abrir cartilla.
+8. Verificar que Captura, Inventario, Recuperación, Estado y Consistencia siguen funcionando.

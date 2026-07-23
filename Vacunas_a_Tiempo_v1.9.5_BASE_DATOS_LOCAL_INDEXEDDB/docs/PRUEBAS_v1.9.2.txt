@@ -1,0 +1,10 @@
+PRUEBAS RECOMENDADAS v1.9.2
+
+1. Abrir Vacunación y seleccionar un paciente.
+2. Escribir Hexavalente y confirmar vía/sitio sugeridos.
+3. Confirmar que se seleccione automáticamente un lote vigente cuando exista.
+4. Verificar alerta de existencia baja con lote de 5 dosis o menos.
+5. Intentar guardar sin lote, vía o sitio: el sistema debe impedirlo y explicar faltantes.
+6. Preparar dos vacunas, cerrar y volver a abrir: debe ofrecer recuperar el borrador.
+7. Guardar correctamente y confirmar descuento de inventario.
+8. Revisar que Expedientes, Estado del esquema y Consistencia sigan funcionando.

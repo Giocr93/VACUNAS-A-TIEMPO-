@@ -1,0 +1,11 @@
+VACUNAS A TIEMPO v1.7.1
+
+- Botón principal “Descargar TODO el respaldo”.
+- Respaldo integral con fecha, hora, versión y resumen de registros.
+- Restauración completa compatible con respaldos integrales y respaldos anteriores.
+- Conserva descargas separadas de pacientes, aplicaciones, inventario/lotes y citas.
+- Vista previa de la consulta antes de guardar varias vacunas.
+- Muestra fecha de nacimiento y edad exacta en la vista previa.
+- Corrige el texto técnico sobre aplicaciones simultáneas en muslo y deltoides.
+- Mantiene jeringas separadas, registro individual del sitio y separación de 2.5 cm.
+- Base estable: v1.7.0 Motor Clínico y Sitios Anatómicos.

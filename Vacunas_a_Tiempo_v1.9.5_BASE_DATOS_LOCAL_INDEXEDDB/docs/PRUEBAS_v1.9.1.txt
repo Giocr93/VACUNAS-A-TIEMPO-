@@ -1,0 +1,9 @@
+PRUEBAS SUGERIDAS v1.9.1
+
+1. Abrir Consistencia clínica y seleccionar un paciente sin aplicaciones.
+2. Verificar un paciente con historial normal.
+3. Crear o localizar un registro duplicado y confirmar la alerta.
+4. Probar una fecha futura o anterior al nacimiento.
+5. Probar una aplicación actual sin lote.
+6. Abrir el expediente y usar Revisar consistencia.
+7. Confirmar que Estado del esquema, Recuperación, Captura e Inventario continúan funcionando.

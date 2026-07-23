@@ -1,0 +1,10 @@
+PRUEBAS SUGERIDAS v1.9.0
+
+1. Abrir la aplicación y confirmar que aparece “Estado del esquema” en el menú.
+2. Seleccionar un paciente con fecha de nacimiento válida.
+3. Confirmar que se muestran estado general, porcentaje y estados por biológico.
+4. Probar paciente sin aplicaciones, con esquema parcial y con aplicaciones completas.
+5. Abrir “Información clínica configurada” en varios biológicos.
+6. Usar “Preparar captura” y confirmar que abre Vacunación con paciente y biológico.
+7. Abrir el expediente y verificar el resumen “Estado integral”.
+8. Confirmar que Recuperación, Validación, Inventario, Agenda y respaldos siguen funcionando.

@@ -1,0 +1,21 @@
+VACUNAS A TIEMPO v1.3.10
+
+CORRECCIONES OCR
+- Detecta documentos donde los apellidos aparecen en la línea NOMBRE y los nombres en la línea siguiente.
+- Caso validado: ROSAS VIRGEN / ANA KAREN.
+- Extractor CURP tolerante a espacios, guiones y confusiones OCR como O/0, I/1, S/5 y B/8.
+- Prioriza la CURP situada después de la etiqueta CURP y evalúa la estructura antes de seleccionarla.
+- Obtiene fecha de nacimiento desde la CURP y usa la fecha impresa como respaldo.
+- Muestra el método utilizado para detectar el nombre.
+- Mejora el cálculo de completitud de los datos.
+
+QR
+- Se conserva sin cambios el lector QR v1.3.9, validado correctamente por el usuario.
+
+PRUEBA DE REFERENCIA
+- Apellido paterno: ROSAS
+- Apellido materno: VIRGEN
+- Nombre(s): ANA KAREN
+- CURP esperada: ROVA950709MVZSRN08
+- Nacimiento: 09/07/1995
+- Sexo: Femenino

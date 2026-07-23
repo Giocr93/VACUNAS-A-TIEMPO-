@@ -1,0 +1,16 @@
+VACUNAS A TIEMPO v1.4.5
+
+NAVEGACIÓN Y ACCESIBILIDAD
+- Se agregó desplazamiento vertical independiente al menú lateral izquierdo.
+- Todas las secciones permanecen accesibles en pantallas de menor altura.
+- La rueda del mouse, el panel táctil y la barra visible permiten recorrer el menú.
+- El contenido central ya no se desplaza al recorrer las opciones laterales.
+- La opción activa se desplaza automáticamente hasta quedar visible.
+- Se mejoró el contraste y el tamaño de la barra de desplazamiento.
+- En pantallas pequeñas el menú tiene un área desplazable de altura controlada.
+- El botón Cerrar sesión permanece disponible y no tapa las opciones del menú.
+
+COMPATIBILIDAD
+- Se mantienen los módulos de Censo nominal, Concentrado mensual, Seguimiento,
+  Lector inteligente de cartillas, Captura inteligente y QR.
+- Compatible con los datos guardados en versiones anteriores.

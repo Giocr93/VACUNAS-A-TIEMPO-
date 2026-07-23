@@ -1,0 +1,22 @@
+VACUNAS A TIEMPO v1.3.5
+Fecha: 19 de julio de 2026
+
+NUEVO: QR INTELIGENTE LOCAL
+- Generación de QR único y dinámico para cada paciente.
+- El QR se crea sin conexión a internet mediante una biblioteca incluida en el proyecto.
+- Descarga del QR como imagen PNG.
+- Impresión de credencial QR del paciente.
+- Botón QR desde el listado y desde el expediente.
+- Centro QR agregado al menú principal.
+- Lectura de QR desde fotografía en navegadores compatibles con BarcodeDetector.
+- Alternativa para pegar manualmente el código interno.
+- Verificación de integridad del QR para detectar códigos incompletos o modificados.
+- El QR evita incluir nombre, teléfono o tutor para reducir exposición de datos.
+
+PREPARACIÓN PARA CAPTURA INTELIGENTE
+- Entrada de imágenes desde archivo o cámara integrada en el Centro QR.
+- Base técnica preparada para conectar OCR de CURP, acta de nacimiento y cartilla.
+
+COMPATIBILIDAD
+- Conserva pacientes, aplicaciones, inventario, citas y respaldos de versiones anteriores.
+- Credenciales: admin / admin123.

@@ -1,0 +1,24 @@
+VACUNAS A TIEMPO v1.3.3
+Fecha: 19 de julio de 2026
+
+CORRECCIONES
+- Corregido el botón Eliminar de la agenda, que llamaba a una función inexistente.
+- Validación de fechas para evitar nacimientos futuros y lotes caducados.
+- Validación de teléfonos y CURP en alta y edición de pacientes.
+- Prevención de citas duplicadas para el mismo paciente y fecha.
+- Mejor manejo de lotes repetidos y cantidades enteras.
+
+MEJORAS
+- Búsqueda de pacientes por nombre, CURP, tutor o teléfono.
+- Contador de resultados y orden alfabético de pacientes.
+- Exportación CSV independiente de pacientes e inventario.
+- Respaldo JSON con versión, fecha y metadatos de la aplicación.
+- Restauración compatible con respaldos anteriores y nuevos.
+- Revisión de integridad para detectar CURP duplicadas, registros huérfanos y existencias negativas.
+- Dashboard con citas vencidas accionables y alertas de inventario.
+- Opción para deshacer la última aplicación y devolver la dosis al inventario.
+- Limpieza automática del formulario después de registrar un paciente o entrada de inventario.
+
+PRUEBAS TÉCNICAS
+- Sintaxis JavaScript validada con Node.js sin errores.
+- Integridad del archivo HTML y estructura del ZIP revisadas.

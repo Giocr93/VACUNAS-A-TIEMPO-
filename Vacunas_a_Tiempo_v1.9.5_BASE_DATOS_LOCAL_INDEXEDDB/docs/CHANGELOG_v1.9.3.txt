@@ -1,0 +1,13 @@
+VACUNAS A TIEMPO v1.9.3
+CARTILLA DIGITAL INTELIGENTE · FASE 1
+
+- Nueva pestaña Cartilla digital.
+- Cartilla generada por dosis desde el Motor de Vacunación.
+- Estados: aplicada, disponible, recuperación, revisar, próxima y futura.
+- Panel de detalle al seleccionar una dosis.
+- Muestra fecha, edad al aplicar, lote, caducidad, laboratorio, vía, sitio y vacunador cuando existen.
+- Explicación “¿Por qué aparece así?”.
+- Navegación simulada por edades.
+- Preparación directa de captura para dosis disponibles o en recuperación.
+- Acceso desde el expediente.
+- Conserva todos los módulos de v1.9.2.

@@ -1,0 +1,15 @@
+VACUNAS A TIEMPO v1.5.2
+Motor Clínico de Vacunación 2026
+
+CAMBIOS
+- Corrección clínica prioritaria para vacuna contra rotavirus.
+- A partir de los 8 meses, una dosis no registrada se clasifica como FUERA DE TIEMPO.
+- Se muestra el límite: 7 meses 29 días.
+- Se muestra el motivo y la acción recomendada: NO APLICAR.
+- Las dosis ya registradas conservan el estado REGISTRADA.
+- Nuevo campo configurable de edad máxima para reglas del motor.
+- Nuevo contador de vacunas fuera de tiempo.
+- Exportación CSV incluye motivo y acción.
+
+NOTA DE SEGURIDAD
+El motor es apoyo operativo y no sustituye la revisión de cartilla, antecedentes, contraindicaciones ni lineamientos institucionales vigentes.

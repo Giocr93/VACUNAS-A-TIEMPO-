@@ -1,0 +1,11 @@
+VACUNAS A TIEMPO v1.6.4 — HOTFIX DE EXPEDIENTES
+
+CORRECCIONES
+- Los botones Expediente y Abrir expediente ahora envían el identificador del paciente como un valor JavaScript seguro.
+- Se aceptan identificadores numéricos, de texto, UUID y registros restaurados desde respaldos.
+- Se agregó una resolución centralizada del paciente antes de abrir el expediente.
+- Se agregó aviso visible si el paciente no puede localizarse o si ocurre un error al cargarlo.
+
+BASE
+- Construida desde la versión estable v1.6.3.
+- No incluye cambios de diseño ni nuevas ramas funcionales.

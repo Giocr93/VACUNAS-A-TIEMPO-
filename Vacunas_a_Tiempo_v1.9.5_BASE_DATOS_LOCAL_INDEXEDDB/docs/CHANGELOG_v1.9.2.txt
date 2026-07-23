@@ -1,0 +1,13 @@
+VACUNAS A TIEMPO v1.9.2
+ASISTENTE INTELIGENTE DE CAPTURA
+
+- Sugerencias automáticas de vía, sitio y volumen según el biológico seleccionado.
+- Selección automática del primer lote vigente disponible, priorizando caducidad próxima.
+- Alertas por existencia baja, lote faltante o caducidad incompatible.
+- Checklist dinámico antes del guardado.
+- Resumen de aplicaciones actuales e históricas preparadas.
+- Autoguardado local de capturas sin finalizar.
+- Recuperación opcional del borrador al volver a abrir el módulo.
+- Conserva validación clínica, consistencia, recuperación, inventario y respaldos.
+
+NOTA: Las sugerencias deben confirmarse con ficha técnica, cartilla, lineamientos vigentes y criterio profesional.

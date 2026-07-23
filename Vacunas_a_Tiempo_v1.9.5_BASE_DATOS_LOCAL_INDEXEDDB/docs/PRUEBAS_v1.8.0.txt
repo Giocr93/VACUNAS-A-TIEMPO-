@@ -1,0 +1,9 @@
+PRUEBAS SUGERIDAS v1.8.0
+1. Abrir Vacunación y comprobar insignia v1.8.0.
+2. Intentar guardar sin revisar: debe bloquear y pedir “Revisar captura”.
+3. Capturar fecha futura: debe mostrar error crítico y deshabilitar confirmación.
+4. Aplicación actual sin lote: debe mostrar error crítico.
+5. Corregir datos y volver a revisar: debe habilitar confirmación profesional.
+6. Modificar un campo después de revisar: debe invalidar la revisión.
+7. Seleccionar dos inyecciones en el mismo muslo: debe mostrar información, no bloquear.
+8. Confirmar revisión y guardar: debe conservar la operación habitual de v1.7.1.

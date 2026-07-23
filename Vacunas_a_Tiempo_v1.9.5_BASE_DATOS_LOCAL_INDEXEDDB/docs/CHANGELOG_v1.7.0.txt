@@ -1,0 +1,12 @@
+VACUNAS A TIEMPO v1.7.0
+
+- Fecha de nacimiento y edad exacta siempre visibles en el expediente.
+- Fecha de nacimiento y edad visibles antes de aceptar sugerencias del motor.
+- Sitio anatómico y vía sugeridos en cada vacuna recomendada.
+- Se permite seleccionar el mismo muslo o deltoides para vacunas simultáneas.
+- Aviso de separación mínima de 2.5 cm entre puntos de inyección.
+- No se bloquea la repetición del mismo miembro; se documenta cada sitio.
+- Reglas especiales orientativas para BCG, vacunas orales y subcutáneas.
+- Se conserva captura múltiple de hasta 20 vacunas y guardado conjunto.
+
+La sugerencia no sustituye la valoración profesional ni los lineamientos institucionales vigentes.

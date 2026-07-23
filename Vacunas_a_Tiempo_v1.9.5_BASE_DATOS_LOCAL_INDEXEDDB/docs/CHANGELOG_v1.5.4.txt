@@ -1,0 +1,17 @@
+VACUNAS A TIEMPO v1.5.4
+Motor de Calidad y Seguridad del Registro
+
+CAMBIOS
+- Se conserva íntegramente la aplicación v1.5.3 y todos sus módulos.
+- Nuevo módulo “Calidad del registro”.
+- Detecta posibles aplicaciones duplicadas.
+- Detecta fechas futuras y aplicaciones anteriores al nacimiento.
+- Detecta aplicaciones y citas sin paciente vinculado.
+- Detecta registros incompletos y lotes no localizados.
+- Advierte lotes con caducidad anterior a la fecha registrada de aplicación.
+- Advierte inventario negativo o lotes caducados con existencia.
+- Incluye filtros por prioridad, acceso al expediente y exportación CSV.
+- Se corrigió el número de versión incluido en los respaldos.
+
+SEGURIDAD
+El módulo no corrige ni elimina datos automáticamente. Cada observación debe verificarse contra la documentación original antes de modificar un registro.

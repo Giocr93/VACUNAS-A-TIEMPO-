@@ -1,0 +1,5 @@
+PRUEBAS REALIZADAS
+- Validación de sintaxis JavaScript.
+- Integridad del archivo ZIP.
+- Conservación de módulos y archivos de la versión estable anterior.
+- Revisión estática del flujo: expediente -> encabezado clínico; sugerencia -> sitio/vía -> captura múltiple.

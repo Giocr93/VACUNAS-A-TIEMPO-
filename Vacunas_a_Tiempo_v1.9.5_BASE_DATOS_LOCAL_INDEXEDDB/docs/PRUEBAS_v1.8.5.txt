@@ -1,0 +1,10 @@
+PRUEBAS RECOMENDADAS v1.8.5
+
+1. Abrir Recuperación de esquemas y seleccionar un paciente sin aplicaciones.
+2. Confirmar que, si faltan varias dosis de Hexavalente, solo la primera faltante aparece en la primera jornada.
+3. Confirmar que las demás dosis aparecen en Etapas posteriores.
+4. Probar un paciente mayor de 8 meses sin Rotavirus y verificar Ventanas cerradas.
+5. Usar Preparar captura y comprobar que abre Vacunación con paciente, vacuna y dosis.
+6. Exportar CSV.
+7. Abrir el expediente y usar el botón Abrir mapa.
+8. Registrar vacunas y comprobar que sigue siendo obligatoria la revisión educativa v1.8.0.

@@ -1,0 +1,16 @@
+VACUNAS A TIEMPO v1.4.2
+
+LECTOR DE CARTILLAS: FECHAS MEJORADAS
+- OCR en tres pasadas: página completa, página izquierda y página derecha.
+- Segunda lectura especializada para números, separadores y meses.
+- Reconoce fechas numéricas y con meses en español (ej. 3 ABR 2019, 04-06-19, 28-OCT-22).
+- Corrige confusiones comunes de escritura/OCR: O/0, I/1, guiones y espacios.
+- Valida fechas reales y evita años imposibles.
+- Asocia cada vacuna con la fecha más cercana en el texto.
+- Muestra fechas sueltas no asociadas para asignarlas manualmente sin recapturar.
+- Añade columna “Texto leído” para comprobar qué interpretó el OCR.
+- Agrega dosis Cuarta y Revacunación.
+- Conserva el QR sin cambios.
+
+NOTA
+La escritura manuscrita y las etiquetas pegadas siguen requiriendo revisión visual. La versión prioriza no perder las fechas detectadas y facilita corregir la asociación antes de importar.

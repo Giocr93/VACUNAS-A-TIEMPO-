@@ -1,0 +1,16 @@
+VACUNAS A TIEMPO v1.4.4
+
+NUEVO: CENSO NOMINAL
+- Padrón completo de pacientes con búsqueda y filtros.
+- Clasificación por grupos de edad.
+- Conteo de aplicaciones por paciente.
+- Última aplicación y próxima cita visibles.
+- Estados: datos incompletos, sin aplicaciones, con cita, revisar seguimiento y registro activo.
+- Accesos directos al expediente, agenda y WhatsApp.
+- Exportación del censo a CSV e impresión/PDF.
+- Indicador de expedientes incompletos en el dashboard.
+
+CORRECCIONES TÉCNICAS
+- Los cierres mensuales ahora permanecen guardados después de cerrar y volver a abrir el sistema.
+- Se conservaron sin cambios el lector QR validado y el lector de cartillas de v1.4.2.
+- Compatibilidad con datos de versiones anteriores.

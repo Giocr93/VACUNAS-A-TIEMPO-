@@ -1,0 +1,11 @@
+PRUEBAS TÉCNICAS REALIZADAS
+
+[OK] La función vatEngineNormalize está definida.
+[OK] vatApplicationTimeline puede invocarla.
+[OK] vatCardOpenDose y vatCardAgeBand pueden invocarla.
+[OK] Sintaxis JavaScript validada con Node.js.
+[OK] Integridad ZIP validada.
+
+Prueba funcional solicitada al usuario:
+- Abrir expedientes desde Pacientes, Seguimiento y demás módulos.
+- Confirmar que cargan historial, cartilla inteligente y citas.

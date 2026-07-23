@@ -1,0 +1,9 @@
+PRUEBAS RECOMENDADAS v1.6.6
+
+1. Abrir Vacunación y seleccionar un paciente con vacunas pendientes.
+2. Seleccionar varias sugerencias del motor.
+3. Abrir sus submenús y combinar aplicaciones actuales con antecedentes.
+4. Elegir lotes vigentes para las actuales y escribir lotes anteriores para las históricas.
+5. Agregar todas al formulario y comprobar que aparezcan como filas separadas.
+6. Guardar una sola vez y verificar descuento de inventario únicamente en las actuales.
+7. Confirmar que Expedientes, Pacientes, Inventario y Reportes continúan funcionando.

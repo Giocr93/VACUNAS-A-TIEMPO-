@@ -1,0 +1,21 @@
+VACUNAS A TIEMPO v1.4.3
+
+NUEVO: CONCENTRADO MENSUAL
+- Selección de mes y filtro por vacunador.
+- Totales de dosis, pacientes atendidos, citas y nuevos pacientes.
+- Desglose por biológico y dosis.
+- Tabla de actividad diaria.
+- Resumen por vacunador y estado de citas.
+- Alertas de inventario bajo y lotes caducados.
+- Exportación completa del mes a CSV.
+- Respaldo mensual independiente en JSON.
+- Cierre operativo mensual con fotografía de totales y código de control.
+- Historial de cierres mensuales.
+- Acceso directo desde el panel principal.
+
+LECTOR DE CARTILLAS
+- Se conserva la mejora de v1.4.2 que ya recupera parte de las fechas manuscritas.
+- La optimización fina continuará posteriormente sin detener el resto del sistema.
+
+COMPATIBILIDAD
+- Conserva pacientes, aplicaciones, inventario, citas, QR, OCR y respaldos anteriores.

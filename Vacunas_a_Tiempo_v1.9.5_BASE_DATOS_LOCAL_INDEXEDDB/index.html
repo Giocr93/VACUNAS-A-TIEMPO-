@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>Vacunas a Tiempo v1.9.4.1</title>
+<link href="css/styles.css" rel="stylesheet"/><script src="js/vendor/qr-local.js">
+
+/* =============================================================
+   v1.6.1 · Auditor clínico y dashboard operativo
+   Amplía el motor de calidad existente sin modificar registros.
+   ============================================================= */
+function vatAuditScan(){
+ const issues=vatQualityScan().map(x=>({...x,source:'Registro'})),today=isoToday();
+ data.appointments.forEach(a=>{
+  if(a.date&&a.date<today&&!['Atendida','Cancelada'].includes(a.status||'Programada')){
+   issues.push({severity:'high',source:'Agenda',type:'Cita vencida',patientId:a.patientId,date:a.date,detail:`Cita vencida: ${a.reason||'Seguimiento de vacunación'}.`,action:'Contactar al paciente, reprogramar o registrar el resultado de la cita.'});
+  }
+ });
+ data.patients.forEach(p=>{
+  if(!p.birth||p.birth>today)return;
+  try{
+   const e=vatEngineEvaluate(p,today),due=e.items.filter(x=>x.status==='due'&&x.kind!=='special'),outside=e.items.filter(x=>x.status==='outOfTime');
+   if(due.length)issues.push({severity:due.length>=3?'high':'medium',source:'Clínico',type:'Esquema pendiente',patientId:p.id,date:today,detail:`${due.length} dosis pendiente(s): ${due.slice(0,4).map(x=>x.vaccine+' '+x.dose).join(', ')}${due.length>4?'…':''}`,action:'Abrir el expediente y confirmar cartilla antes de aplicar o programar recuperación.'});
+   if(outside.length)issues.push({severity:'high',source:'Clínico',type:'Ventana de oportunidad cerrada',patientId:p.id,date:today,detail:outside.slice(0,3).map(x=>`${x.vaccine} ${x.dose}: ${x.reason||'fuera de tiempo'}`).join(' · '),action:'Revisar antecedente y seguir el lineamiento vigente para esa edad.'});
+  }catch(err){console.warn('Auditor clínico:',err)}
+ });
+ const rank={critical:0,high:1,medium:2,low:3};
+ return issues.sort((a,b)=>(rank[a.severity]-rank[b.severity])||String(a.date||'').localeCompare(String(b.date||'')));
+}
+function vatAuditCounts(){const c={critical:0,high:0,medium:0,low:0,clinical:0,overdue:0};vatAuditScan().forEach(x=>{c[x.severity]=(c[x.severity]||0)+1;if(x.source==='Clínico')c.clinical++;if(x.type==='Cita vencida')c.overdue++});return c}
+function qualityCenter(){
+ const counts=vatAuditCounts(),issues=vatAuditScan();
+ view.innerHTML=`<div class="card"><div class="row" style="justify-content:space-between"><div><h2>🩺 Auditor clínico</h2><p class="muted">Versión ${VAT_QUALITY_VERSION}. Revisa calidad del registro, agenda y alertas generadas por el motor clínico.</p></div><button class="btn secondary" onclick="vatExportAuditCSV()">Exportar auditoría CSV</button></div><div class="notice"><b>No corrige datos automáticamente.</b> Cada hallazgo debe compararse con cartilla, expediente y lineamientos vigentes.</div></div>
+ <div class="grid section"><div class="card stat"><span>Críticas</span><b>${counts.critical}</b></div><div class="card stat"><span>Prioridad alta</span><b>${counts.high}</b></div><div class="card stat"><span>Alertas clínicas</span><b>${counts.clinical}</b></div><div class="card stat"><span>Total a revisar</span><b>${issues.length}</b></div></div>
+ <div class="card section"><div class="toolbar"><label>Prioridad <select id="qualityFilter" onchange="vatRenderQualityIssues()"><option value="">Todas</option><option value="critical">Crítica</option><option value="high">Alta</option><option value="medium">Media</option><option value="low">Baja</option></select></label><label>Origen <select id="auditSource" onchange="vatRenderQualityIssues()"><option value="">Todos</option><option>Registro</option><option>Clínico</option><option>Agenda</option></select></label><label style="flex:1">Buscar <input id="qualitySearch" placeholder="Paciente, vacuna, lote o hallazgo" oninput="vatRenderQualityIssues()" style="width:100%"></label></div><div id="qualityIssues"></div></div>`;
+ vatRenderQualityIssues();
+}
+function vatRenderQualityIssues(){
+ const sev=document.getElementById('qualityFilter')?.value||'',source=document.getElementById('auditSource')?.value||'',q=(document.getElementById('qualitySearch')?.value||'').trim().toLowerCase(),box=document.getElementById('qualityIssues');if(!box)return;
+ const arr=vatAuditScan().filter(x=>(!sev||x.severity===sev)&&(!source||x.source===source)&&(!q||(x.type+' '+x.detail+' '+x.source+' '+(vatQualityPatient(x.patientId)?full(vatQualityPatient(x.patientId)):'')).toLowerCase().includes(q)));
+ if(!arr.length){box.innerHTML='<div class="success">No se encontraron hallazgos con estos filtros.</div>';return}
+ box.innerHTML=`<div class="audit-list">${arr.map(x=>{const p=vatQualityPatient(x.patientId);return `<div class="audit-item ${esc(x.severity)} ${x.source==='Clínico'?'clinical':''}"><div class="row" style="justify-content:space-between"><div>${vatQualityBadge(x.severity)} <span class="badge">${esc(x.source||'Registro')}</span> <b>${esc(x.type)}</b></div><small>${x.date?esc(formatDateMX(x.date)):''}</small></div><p>${esc(x.detail)}</p><p class="muted"><b>Acción:</b> ${esc(x.action)}</p><div class="row">${p?`<button class="btn primary" onclick="patientRecord(${JSON.stringify(p.id)})">Abrir expediente</button>`:''}${x.source==='Agenda'?`<button class="btn secondary" onclick="quick('agenda')">Abrir agenda</button>`:''}${!p&&x.source==='Registro'?`<button class="btn secondary" onclick="quick('inventory')">Abrir inventario</button>`:''}</div></div>`}).join('')}</div>`;
+}
+function vatExportAuditCSV(){const rows=[['Prioridad','Origen','Tipo','Paciente','Fecha','Hallazgo','Acción sugerida'],...vatAuditScan().map(x=>[vatQualityLabel(x.severity),x.source||'Registro',x.type,vatQualityPatient(x.patientId)?full(vatQualityPatient(x.patientId)):'',x.date||'',x.detail,x.action])];downloadCSV('auditoria_clinica_'+isoToday()+'.csv',rows)}
+function vatDashboardPatients(){
+ let due=0,outside=0;data.patients.forEach(p=>{if(!p.birth)return;try{const e=vatEngineEvaluate(p);if(e.items.some(x=>x.status==='due'&&x.kind!=='special'))due++;if(e.items.some(x=>x.status==='outOfTime'))outside++}catch(e){}});return{due,outside};
+}
+function dashboard(){
+ const today=isoToday(),todayV=data.vaccinations.filter(x=>x.date===today),todayA=data.appointments.filter(x=>x.date===today&&!['Cancelada'].includes(x.status)),next7=new Date(today+'T12:00:00');next7.setDate(next7.getDate()+7);const end7=next7.toISOString().slice(0,10),upcoming=data.appointments.filter(x=>x.date>=today&&x.date<=end7&&!['Atendida','Cancelada'].includes(x.status)),expired=data.inventory.filter(x=>x.expiry&&x.expiry<today&&Number(x.qty)>0),soon=data.inventory.filter(x=>x.expiry&&x.expiry>=today&&x.expiry<=end7&&Number(x.qty)>0),low=data.inventory.filter(x=>Number(x.qty)<=5),audit=vatAuditCounts(),clinical=vatDashboardPatients();
+ const recent=vatAuditScan().slice(0,5);
+ view.innerHTML=`<div class="vat-searchbar no-print"><input placeholder="Buscar paciente, CURP, teléfono, lote o cita" onkeydown="if(event.key==='Enter'){sessionStorage.setItem('vat_search_query',this.value);quick('universalSearch');setTimeout(()=>{const i=document.getElementById('vatGlobalSearch');if(i){i.value=sessionStorage.getItem('vat_search_query')||'';vatRenderUniversalSearch()}},50)}"><button class="btn secondary" onclick="quick('universalSearch')">Buscar</button></div>
+ <div class="grid section"><div class="card stat clickable" onclick="quick('patients')"><span>Pacientes registrados</span><b>${data.patients.length}</b><span class="metric-note">Abrir padrón</span></div><div class="card stat clickable" onclick="quick('vaccination')"><span>Vacunas aplicadas hoy</span><b>${todayV.length}</b><span class="metric-note">Registrar aplicación</span></div><div class="card stat clickable" onclick="quick('agenda')"><span>Citas de hoy</span><b>${todayA.length}</b><span class="metric-note">${upcoming.length} en próximos 7 días</span></div><div class="card stat clickable" onclick="quick('qualityCenter')"><span>Alertas prioritarias</span><b>${audit.critical+audit.high}</b><span class="metric-note">${audit.clinical} clínicas</span></div></div>
+ <div class="grid section"><div class="card stat clickable" onclick="quick('followUp')"><span>Pacientes con pendientes</span><b>${clinical.due}</b></div><div class="card stat clickable" onclick="quick('qualityCenter')"><span>Ventanas cerradas</span><b>${clinical.outside}</b></div><div class="card stat clickable" onclick="quick('inventory')"><span>Stock bajo</span><b>${low.length}</b></div><div class="card stat clickable" onclick="quick('inventory')"><span>Lotes caducados</span><b>${expired.length}</b><span class="metric-note">${soon.length} caducan en 7 días</span></div></div>
+ <div class="two section"><div class="card"><h3>Acciones rápidas</h3><div class="row"><button class="btn primary" onclick="quick('patients')">Registrar paciente</button><button class="btn primary" onclick="quick('vaccination')">Aplicar vacuna</button><button class="btn secondary" onclick="quick('agenda')">Agendar cita</button><button class="btn secondary" onclick="quick('qualityCenter')">Ejecutar auditoría</button></div><h3 class="section">Citas próximas</h3><div class="dash-list">${upcoming.slice(0,6).map(a=>`<div class="dash-row"><div><b>${esc(a.patient||'Paciente')}</b><div class="muted mini">${esc(a.reason||'Seguimiento')}</div></div><span>${formatDateMX(a.date)}</span></div>`).join('')||'<p class="muted">Sin citas próximas.</p>'}</div></div>
+ <div class="card"><div class="row" style="justify-content:space-between"><h3>Hallazgos prioritarios</h3><button class="btn secondary" onclick="quick('qualityCenter')">Ver todos</button></div><div class="dash-list">${recent.map(x=>{const p=vatQualityPatient(x.patientId);return `<div class="dash-row"><div><b>${esc(x.type)}</b><div class="muted mini">${p?esc(full(p))+' · ':''}${esc(x.detail)}</div></div>${p?`<button class="btn secondary" onclick="patientRecord(${JSON.stringify(p.id)})">Abrir</button>`:''}</div>`}).join('')||'<div class="success">Sin hallazgos prioritarios.</div>'}</div></div></div>
+ <div class="notice section"><b>Apoyo a la decisión:</b> confirma cartilla, antecedentes, contraindicaciones, disponibilidad y lineamientos vigentes antes de aplicar.</div>`;
+}
+var vatAuditTab161=tabs.find(t=>t[0]==='qualityCenter');if(vatAuditTab161)vatAuditTab161[1]='Auditor clínico';
+
+</script><script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js">
+
+/* =============================================================
+   v1.6.1 · Auditor clínico y dashboard operativo
+   Amplía el motor de calidad existente sin modificar registros.
+   ============================================================= */
+function vatAuditScan(){
+ const issues=vatQualityScan().map(x=>({...x,source:'Registro'})),today=isoToday();
+ data.appointments.forEach(a=>{
+  if(a.date&&a.date<today&&!['Atendida','Cancelada'].includes(a.status||'Programada')){
+   issues.push({severity:'high',source:'Agenda',type:'Cita vencida',patientId:a.patientId,date:a.date,detail:`Cita vencida: ${a.reason||'Seguimiento de vacunación'}.`,action:'Contactar al paciente, reprogramar o registrar el resultado de la cita.'});
+  }
+ });
+ data.patients.forEach(p=>{
+  if(!p.birth||p.birth>today)return;
+  try{
+   const e=vatEngineEvaluate(p,today),due=e.items.filter(x=>x.status==='due'&&x.kind!=='special'),outside=e.items.filter(x=>x.status==='outOfTime');
+   if(due.length)issues.push({severity:due.length>=3?'high':'medium',source:'Clínico',type:'Esquema pendiente',patientId:p.id,date:today,detail:`${due.length} dosis pendiente(s): ${due.slice(0,4).map(x=>x.vaccine+' '+x.dose).join(', ')}${due.length>4?'…':''}`,action:'Abrir el expediente y confirmar cartilla antes de aplicar o programar recuperación.'});
+   if(outside.length)issues.push({severity:'high',source:'Clínico',type:'Ventana de oportunidad cerrada',patientId:p.id,date:today,detail:outside.slice(0,3).map(x=>`${x.vaccine} ${x.dose}: ${x.reason||'fuera de tiempo'}`).join(' · '),action:'Revisar antecedente y seguir el lineamiento vigente para esa edad.'});
+  }catch(err){console.warn('Auditor clínico:',err)}
+ });
+ const rank={critical:0,high:1,medium:2,low:3};
+ return issues.sort((a,b)=>(rank[a.severity]-rank[b.severity])||String(a.date||'').localeCompare(String(b.date||'')));
+}
+function vatAuditCounts(){const c={critical:0,high:0,medium:0,low:0,clinical:0,overdue:0};vatAuditScan().forEach(x=>{c[x.severity]=(c[x.severity]||0)+1;if(x.source==='Clínico')c.clinical++;if(x.type==='Cita vencida')c.overdue++});return c}
+function qualityCenter(){
+ const counts=vatAuditCounts(),issues=vatAuditScan();
+ view.innerHTML=`<div class="card"><div class="row" style="justify-content:space-between"><div><h2>🩺 Auditor clínico</h2><p class="muted">Versión ${VAT_QUALITY_VERSION}. Revisa calidad del registro, agenda y alertas generadas por el motor clínico.</p></div><button class="btn secondary" onclick="vatExportAuditCSV()">Exportar auditoría CSV</button></div><div class="notice"><b>No corrige datos automáticamente.</b> Cada hallazgo debe compararse con cartilla, expediente y lineamientos vigentes.</div></div>
+ <div class="grid section"><div class="card stat"><span>Críticas</span><b>${counts.critical}</b></div><div class="card stat"><span>Prioridad alta</span><b>${counts.high}</b></div><div class="card stat"><span>Alertas clínicas</span><b>${counts.clinical}</b></div><div class="card stat"><span>Total a revisar</span><b>${issues.length}</b></div></div>
+ <div class="card section"><div class="toolbar"><label>Prioridad <select id="qualityFilter" onchange="vatRenderQualityIssues()"><option value="">Todas</option><option value="critical">Crítica</option><option value="high">Alta</option><option value="medium">Media</option><option value="low">Baja</option></select></label><label>Origen <select id="auditSource" onchange="vatRenderQualityIssues()"><option value="">Todos</option><option>Registro</option><option>Clínico</option><option>Agenda</option></select></label><label style="flex:1">Buscar <input id="qualitySearch" placeholder="Paciente, vacuna, lote o hallazgo" oninput="vatRenderQualityIssues()" style="width:100%"></label></div><div id="qualityIssues"></div></div>`;
+ vatRenderQualityIssues();
+}
+function vatRenderQualityIssues(){
+ const sev=document.getElementById('qualityFilter')?.value||'',source=document.getElementById('auditSource')?.value||'',q=(document.getElementById('qualitySearch')?.value||'').trim().toLowerCase(),box=document.getElementById('qualityIssues');if(!box)return;
+ const arr=vatAuditScan().filter(x=>(!sev||x.severity===sev)&&(!source||x.source===source)&&(!q||(x.type+' '+x.detail+' '+x.source+' '+(vatQualityPatient(x.patientId)?full(vatQualityPatient(x.patientId)):'')).toLowerCase().includes(q)));
+ if(!arr.length){box.innerHTML='<div class="success">No se encontraron hallazgos con estos filtros.</div>';return}
+ box.innerHTML=`<div class="audit-list">${arr.map(x=>{const p=vatQualityPatient(x.patientId);return `<div class="audit-item ${esc(x.severity)} ${x.source==='Clínico'?'clinical':''}"><div class="row" style="justify-content:space-between"><div>${vatQualityBadge(x.severity)} <span class="badge">${esc(x.source||'Registro')}</span> <b>${esc(x.type)}</b></div><small>${x.date?esc(formatDateMX(x.date)):''}</small></div><p>${esc(x.detail)}</p><p class="muted"><b>Acción:</b> ${esc(x.action)}</p><div class="row">${p?`<button class="btn primary" onclick="patientRecord(${JSON.stringify(p.id)})">Abrir expediente</button>`:''}${x.source==='Agenda'?`<button class="btn secondary" onclick="quick('agenda')">Abrir agenda</button>`:''}${!p&&x.source==='Registro'?`<button class="btn secondary" onclick="quick('inventory')">Abrir inventario</button>`:''}</div></div>`}).join('')}</div>`;
+}
+function vatExportAuditCSV(){const rows=[['Prioridad','Origen','Tipo','Paciente','Fecha','Hallazgo','Acción sugerida'],...vatAuditScan().map(x=>[vatQualityLabel(x.severity),x.source||'Registro',x.type,vatQualityPatient(x.patientId)?full(vatQualityPatient(x.patientId)):'',x.date||'',x.detail,x.action])];downloadCSV('auditoria_clinica_'+isoToday()+'.csv',rows)}
+function vatDashboardPatients(){
+ let due=0,outside=0;data.patients.forEach(p=>{if(!p.birth)return;try{const e=vatEngineEvaluate(p);if(e.items.some(x=>x.status==='due'&&x.kind!=='special'))due++;if(e.items.some(x=>x.status==='outOfTime'))outside++}catch(e){}});return{due,outside};
+}
+function dashboard(){
+ const today=isoToday(),todayV=data.vaccinations.filter(x=>x.date===today),todayA=data.appointments.filter(x=>x.date===today&&!['Cancelada'].includes(x.status)),next7=new Date(today+'T12:00:00');next7.setDate(next7.getDate()+7);const end7=next7.toISOString().slice(0,10),upcoming=data.appointments.filter(x=>x.date>=today&&x.date<=end7&&!['Atendida','Cancelada'].includes(x.status)),expired=data.inventory.filter(x=>x.expiry&&x.expiry<today&&Number(x.qty)>0),soon=data.inventory.filter(x=>x.expiry&&x.expiry>=today&&x.expiry<=end7&&Number(x.qty)>0),low=data.inventory.filter(x=>Number(x.qty)<=5),audit=vatAuditCounts(),clinical=vatDashboardPatients();
+ const recent=vatAuditScan().slice(0,5);
+ view.innerHTML=`<div class="vat-searchbar no-print"><input placeholder="Buscar paciente, CURP, teléfono, lote o cita" onkeydown="if(event.key==='Enter'){sessionStorage.setItem('vat_search_query',this.value);quick('universalSearch');setTimeout(()=>{const i=document.getElementById('vatGlobalSearch');if(i){i.value=sessionStorage.getItem('vat_search_query')||'';vatRenderUniversalSearch()}},50)}"><button class="btn secondary" onclick="quick('universalSearch')">Buscar</button></div>
+ <div class="grid section"><div class="card stat clickable" onclick="quick('patients')"><span>Pacientes registrados</span><b>${data.patients.length}</b><span class="metric-note">Abrir padrón</span></div><div class="card stat clickable" onclick="quick('vaccination')"><span>Vacunas aplicadas hoy</span><b>${todayV.length}</b><span class="metric-note">Registrar aplicación</span></div><div class="card stat clickable" onclick="quick('agenda')"><span>Citas de hoy</span><b>${todayA.length}</b><span class="metric-note">${upcoming.length} en próximos 7 días</span></div><div class="card stat clickable" onclick="quick('qualityCenter')"><span>Alertas prioritarias</span><b>${audit.critical+audit.high}</b><span class="metric-note">${audit.clinical} clínicas</span></div></div>
+ <div class="grid section"><div class="card stat clickable" onclick="quick('followUp')"><span>Pacientes con pendientes</span><b>${clinical.due}</b></div><div class="card stat clickable" onclick="quick('qualityCenter')"><span>Ventanas cerradas</span><b>${clinical.outside}</b></div><div class="card stat clickable" onclick="quick('inventory')"><span>Stock bajo</span><b>${low.length}</b></div><div class="card stat clickable" onclick="quick('inventory')"><span>Lotes caducados</span><b>${expired.length}</b><span class="metric-note">${soon.length} caducan en 7 días</span></div></div>
+ <div class="two section"><div class="card"><h3>Acciones rápidas</h3><div class="row"><button class="btn primary" onclick="quick('patients')">Registrar paciente</button><button class="btn primary" onclick="quick('vaccination')">Aplicar vacuna</button><button class="btn secondary" onclick="quick('agenda')">Agendar cita</button><button class="btn secondary" onclick="quick('qualityCenter')">Ejecutar auditoría</button></div><h3 class="section">Citas próximas</h3><div class="dash-list">${upcoming.slice(0,6).map(a=>`<div class="dash-row"><div><b>${esc(a.patient||'Paciente')}</b><div class="muted mini">${esc(a.reason||'Seguimiento')}</div></div><span>${formatDateMX(a.date)}</span></div>`).join('')||'<p class="muted">Sin citas próximas.</p>'}</div></div>
+ <div class="card"><div class="row" style="justify-content:space-between"><h3>Hallazgos prioritarios</h3><button class="btn secondary" onclick="quick('qualityCenter')">Ver todos</button></div><div class="dash-list">${recent.map(x=>{const p=vatQualityPatient(x.patientId);return `<div class="dash-row"><div><b>${esc(x.type)}</b><div class="muted mini">${p?esc(full(p))+' · ':''}${esc(x.detail)}</div></div>${p?`<button class="btn secondary" onclick="patientRecord(${JSON.stringify(p.id)})">Abrir</button>`:''}</div>`}).join('')||'<div class="success">Sin hallazgos prioritarios.</div>'}</div></div></div>
+ <div class="notice section"><b>Apoyo a la decisión:</b> confirma cartilla, antecedentes, contraindicaciones, disponibilidad y lineamientos vigentes antes de aplicar.</div>`;
+}
+var vatAuditTab161=tabs.find(t=>t[0]==='qualityCenter');if(vatAuditTab161)vatAuditTab161[1]='Auditor clínico';
+
+</script><script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js">
+
+/* =============================================================
+   v1.6.1 · Auditor clínico y dashboard operativo
+   Amplía el motor de calidad existente sin modificar registros.
+   ============================================================= */
+function vatAuditScan(){
+ const issues=vatQualityScan().map(x=>({...x,source:'Registro'})),today=isoToday();
+ data.appointments.forEach(a=>{
+  if(a.date&&a.date<today&&!['Atendida','Cancelada'].includes(a.status||'Programada')){
+   issues.push({severity:'high',source:'Agenda',type:'Cita vencida',patientId:a.patientId,date:a.date,detail:`Cita vencida: ${a.reason||'Seguimiento de vacunación'}.`,action:'Contactar al paciente, reprogramar o registrar el resultado de la cita.'});
+  }
+ });
+ data.patients.forEach(p=>{
+  if(!p.birth||p.birth>today)return;
+  try{
+   const e=vatEngineEvaluate(p,today),due=e.items.filter(x=>x.status==='due'&&x.kind!=='special'),outside=e.items.filter(x=>x.status==='outOfTime');
+   if(due.length)issues.push({severity:due.length>=3?'high':'medium',source:'Clínico',type:'Esquema pendiente',patientId:p.id,date:today,detail:`${due.length} dosis pendiente(s): ${due.slice(0,4).map(x=>x.vaccine+' '+x.dose).join(', ')}${due.length>4?'…':''}`,action:'Abrir el expediente y confirmar cartilla antes de aplicar o programar recuperación.'});
+   if(outside.length)issues.push({severity:'high',source:'Clínico',type:'Ventana de oportunidad cerrada',patientId:p.id,date:today,detail:outside.slice(0,3).map(x=>`${x.vaccine} ${x.dose}: ${x.reason||'fuera de tiempo'}`).join(' · '),action:'Revisar antecedente y seguir el lineamiento vigente para esa edad.'});
+  }catch(err){console.warn('Auditor clínico:',err)}
+ });
+ const rank={critical:0,high:1,medium:2,low:3};
+ return issues.sort((a,b)=>(rank[a.severity]-rank[b.severity])||String(a.date||'').localeCompare(String(b.date||'')));
+}
+function vatAuditCounts(){const c={critical:0,high:0,medium:0,low:0,clinical:0,overdue:0};vatAuditScan().forEach(x=>{c[x.severity]=(c[x.severity]||0)+1;if(x.source==='Clínico')c.clinical++;if(x.type==='Cita vencida')c.overdue++});return c}
+function qualityCenter(){
+ const counts=vatAuditCounts(),issues=vatAuditScan();
+ view.innerHTML=`<div class="card"><div class="row" style="justify-content:space-between"><div><h2>🩺 Auditor clínico</h2><p class="muted">Versión ${VAT_QUALITY_VERSION}. Revisa calidad del registro, agenda y alertas generadas por el motor clínico.</p></div><button class="btn secondary" onclick="vatExportAuditCSV()">Exportar auditoría CSV</button></div><div class="notice"><b>No corrige datos automáticamente.</b> Cada hallazgo debe compararse con cartilla, expediente y lineamientos vigentes.</div></div>
+ <div class="grid section"><div class="card stat"><span>Críticas</span><b>${counts.critical}</b></div><div class="card stat"><span>Prioridad alta</span><b>${counts.high}</b></div><div class="card stat"><span>Alertas clínicas</span><b>${counts.clinical}</b></div><div class="card stat"><span>Total a revisar</span><b>${issues.length}</b></div></div>
+ <div class="card section"><div class="toolbar"><label>Prioridad <select id="qualityFilter" onchange="vatRenderQualityIssues()"><option value="">Todas</option><option value="critical">Crítica</option><option value="high">Alta</option><option value="medium">Media</option><option value="low">Baja</option></select></label><label>Origen <select id="auditSource" onchange="vatRenderQualityIssues()"><option value="">Todos</option><option>Registro</option><option>Clínico</option><option>Agenda</option></select></label><label style="flex:1">Buscar <input id="qualitySearch" placeholder="Paciente, vacuna, lote o hallazgo" oninput="vatRenderQualityIssues()" style="width:100%"></label></div><div id="qualityIssues"></div></div>`;
+ vatRenderQualityIssues();
+}
+function vatRenderQualityIssues(){
+ const sev=document.getElementById('qualityFilter')?.value||'',source=document.getElementById('auditSource')?.value||'',q=(document.getElementById('qualitySearch')?.value||'').trim().toLowerCase(),box=document.getElementById('qualityIssues');if(!box)return;
+ const arr=vatAuditScan().filter(x=>(!sev||x.severity===sev)&&(!source||x.source===source)&&(!q||(x.type+' '+x.detail+' '+x.source+' '+(vatQualityPatient(x.patientId)?full(vatQualityPatient(x.patientId)):'')).toLowerCase().includes(q)));
+ if(!arr.length){box.innerHTML='<div class="success">No se encontraron hallazgos con estos filtros.</div>';return}
+ box.innerHTML=`<div class="audit-list">${arr.map(x=>{const p=vatQualityPatient(x.patientId);return `<div class="audit-item ${esc(x.severity)} ${x.source==='Clínico'?'clinical':''}"><div class="row" style="justify-content:space-between"><div>${vatQualityBadge(x.severity)} <span class="badge">${esc(x.source||'Registro')}</span> <b>${esc(x.type)}</b></div><small>${x.date?esc(formatDateMX(x.date)):''}</small></div><p>${esc(x.detail)}</p><p class="muted"><b>Acción:</b> ${esc(x.action)}</p><div class="row">${p?`<button class="btn primary" onclick="patientRecord(${JSON.stringify(p.id)})">Abrir expediente</button>`:''}${x.source==='Agenda'?`<button class="btn secondary" onclick="quick('agenda')">Abrir agenda</button>`:''}${!p&&x.source==='Registro'?`<button class="btn secondary" onclick="quick('inventory')">Abrir inventario</button>`:''}</div></div>`}).join('')}</div>`;
+}
+function vatExportAuditCSV(){const rows=[['Prioridad','Origen','Tipo','Paciente','Fecha','Hallazgo','Acción sugerida'],...vatAuditScan().map(x=>[vatQualityLabel(x.severity),x.source||'Registro',x.type,vatQualityPatient(x.patientId)?full(vatQualityPatient(x.patientId)):'',x.date||'',x.detail,x.action])];downloadCSV('auditoria_clinica_'+isoToday()+'.csv',rows)}
+function vatDashboardPatients(){
+ let due=0,outside=0;data.patients.forEach(p=>{if(!p.birth)return;try{const e=vatEngineEvaluate(p);if(e.items.some(x=>x.status==='due'&&x.kind!=='special'))due++;if(e.items.some(x=>x.status==='outOfTime'))outside++}catch(e){}});return{due,outside};
+}
+function dashboard(){
+ const today=isoToday(),todayV=data.vaccinations.filter(x=>x.date===today),todayA=data.appointments.filter(x=>x.date===today&&!['Cancelada'].includes(x.status)),next7=new Date(today+'T12:00:00');next7.setDate(next7.getDate()+7);const end7=next7.toISOString().slice(0,10),upcoming=data.appointments.filter(x=>x.date>=today&&x.date<=end7&&!['Atendida','Cancelada'].includes(x.status)),expired=data.inventory.filter(x=>x.expiry&&x.expiry<today&&Number(x.qty)>0),soon=data.inventory.filter(x=>x.expiry&&x.expiry>=today&&x.expiry<=end7&&Number(x.qty)>0),low=data.inventory.filter(x=>Number(x.qty)<=5),audit=vatAuditCounts(),clinical=vatDashboardPatients();
+ const recent=vatAuditScan().slice(0,5);
+ view.innerHTML=`<div class="vat-searchbar no-print"><input placeholder="Buscar paciente, CURP, teléfono, lote o cita" onkeydown="if(event.key==='Enter'){sessionStorage.setItem('vat_search_query',this.value);quick('universalSearch');setTimeout(()=>{const i=document.getElementById('vatGlobalSearch');if(i){i.value=sessionStorage.getItem('vat_search_query')||'';vatRenderUniversalSearch()}},50)}"><button class="btn secondary" onclick="quick('universalSearch')">Buscar</button></div>
+ <div class="grid section"><div class="card stat clickable" onclick="quick('patients')"><span>Pacientes registrados</span><b>${data.patients.length}</b><span class="metric-note">Abrir padrón</span></div><div class="card stat clickable" onclick="quick('vaccination')"><span>Vacunas aplicadas hoy</span><b>${todayV.length}</b><span class="metric-note">Registrar aplicación</span></div><div class="card stat clickable" onclick="quick('agenda')"><span>Citas de hoy</span><b>${todayA.length}</b><span class="metric-note">${upcoming.length} en próximos 7 días</span></div><div class="card stat clickable" onclick="quick('qualityCenter')"><span>Alertas prioritarias</span><b>${audit.critical+audit.high}</b><span class="metric-note">${audit.clinical} clínicas</span></div></div>
+ <div class="grid section"><div class="card stat clickable" onclick="quick('followUp')"><span>Pacientes con pendientes</span><b>${clinical.due}</b></div><div class="card stat clickable" onclick="quick('qualityCenter')"><span>Ventanas cerradas</span><b>${clinical.outside}</b></div><div class="card stat clickable" onclick="quick('inventory')"><span>Stock bajo</span><b>${low.length}</b></div><div class="card stat clickable" onclick="quick('inventory')"><span>Lotes caducados</span><b>${expired.length}</b><span class="metric-note">${soon.length} caducan en 7 días</span></div></div>
+ <div class="two section"><div class="card"><h3>Acciones rápidas</h3><div class="row"><button class="btn primary" onclick="quick('patients')">Registrar paciente</button><button class="btn primary" onclick="quick('vaccination')">Aplicar vacuna</button><button class="btn secondary" onclick="quick('agenda')">Agendar cita</button><button class="btn secondary" onclick="quick('qualityCenter')">Ejecutar auditoría</button></div><h3 class="section">Citas próximas</h3><div class="dash-list">${upcoming.slice(0,6).map(a=>`<div class="dash-row"><div><b>${esc(a.patient||'Paciente')}</b><div class="muted mini">${esc(a.reason||'Seguimiento')}</div></div><span>${formatDateMX(a.date)}</span></div>`).join('')||'<p class="muted">Sin citas próximas.</p>'}</div></div>
+ <div class="card"><div class="row" style="justify-content:space-between"><h3>Hallazgos prioritarios</h3><button class="btn secondary" onclick="quick('qualityCenter')">Ver todos</button></div><div class="dash-list">${recent.map(x=>{const p=vatQualityPatient(x.patientId);return `<div class="dash-row"><div><b>${esc(x.type)}</b><div class="muted mini">${p?esc(full(p))+' · ':''}${esc(x.detail)}</div></div>${p?`<button class="btn secondary" onclick="patientRecord(${JSON.stringify(p.id)})">Abrir</button>`:''}</div>`}).join('')||'<div class="success">Sin hallazgos prioritarios.</div>'}</div></div></div>
+ <div class="notice section"><b>Apoyo a la decisión:</b> confirma cartilla, antecedentes, contraindicaciones, disponibilidad y lineamientos vigentes antes de aplicar.</div>`;
+}
+var vatAuditTab161=tabs.find(t=>t[0]==='qualityCenter');if(vatAuditTab161)vatAuditTab161[1]='Auditor clínico';
+
+</script><script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs" type="module">
+
+/* =============================================================
+   v1.6.1 · Auditor clínico y dashboard operativo
+   Amplía el motor de calidad existente sin modificar registros.
+   ============================================================= */
+function vatAuditScan(){
+ const issues=vatQualityScan().map(x=>({...x,source:'Registro'})),today=isoToday();
+ data.appointments.forEach(a=>{
+  if(a.date&&a.date<today&&!['Atendida','Cancelada'].includes(a.status||'Programada')){
+   issues.push({severity:'high',source:'Agenda',type:'Cita vencida',patientId:a.patientId,date:a.date,detail:`Cita vencida: ${a.reason||'Seguimiento de vacunación'}.`,action:'Contactar al paciente, reprogramar o registrar el resultado de la cita.'});
+  }
+ });
+ data.patients.forEach(p=>{
+  if(!p.birth||p.birth>today)return;
+  try{
+   const e=vatEngineEvaluate(p,today),due=e.items.filter(x=>x.status==='due'&&x.kind!=='special'),outside=e.items.filter(x=>x.status==='outOfTime');
+   if(due.length)issues.push({severity:due.length>=3?'high':'medium',source:'Clínico',type:'Esquema pendiente',patientId:p.id,date:today,detail:`${due.length} dosis pendiente(s): ${due.slice(0,4).map(x=>x.vaccine+' '+x.dose).join(', ')}${due.length>4?'…':''}`,action:'Abrir el expediente y confirmar cartilla antes de aplicar o programar recuperación.'});
+   if(outside.length)issues.push({severity:'high',source:'Clínico',type:'Ventana de oportunidad cerrada',patientId:p.id,date:today,detail:outside.slice(0,3).map(x=>`${x.vaccine} ${x.dose}: ${x.reason||'fuera de tiempo'}`).join(' · '),action:'Revisar antecedente y seguir el lineamiento vigente para esa edad.'});
+  }catch(err){console.warn('Auditor clínico:',err)}
+ });
+ const rank={critical:0,high:1,medium:2,low:3};
+ return issues.sort((a,b)=>(rank[a.severity]-rank[b.severity])||String(a.date||'').localeCompare(String(b.date||'')));
+}
+function vatAuditCounts(){const c={critical:0,high:0,medium:0,low:0,clinical:0,overdue:0};vatAuditScan().forEach(x=>{c[x.severity]=(c[x.severity]||0)+1;if(x.source==='Clínico')c.clinical++;if(x.type==='Cita vencida')c.overdue++});return c}
+function qualityCenter(){
+ const counts=vatAuditCounts(),issues=vatAuditScan();
+ view.innerHTML=`<div class="card"><div class="row" style="justify-content:space-between"><div><h2>🩺 Auditor clínico</h2><p class="muted">Versión ${VAT_QUALITY_VERSION}. Revisa calidad del registro, agenda y alertas generadas por el motor clínico.</p></div><button class="btn secondary" onclick="vatExportAuditCSV()">Exportar auditoría CSV</button></div><div class="notice"><b>No corrige datos automáticamente.</b> Cada hallazgo debe compararse con cartilla, expediente y lineamientos vigentes.</div></div>
+ <div class="grid section"><div class="card stat"><span>Críticas</span><b>${counts.critical}</b></div><div class="card stat"><span>Prioridad alta</span><b>${counts.high}</b></div><div class="card stat"><span>Alertas clínicas</span><b>${counts.clinical}</b></div><div class="card stat"><span>Total a revisar</span><b>${issues.length}</b></div></div>
+ <div class="card section"><div class="toolbar"><label>Prioridad <select id="qualityFilter" onchange="vatRenderQualityIssues()"><option value="">Todas</option><option value="critical">Crítica</option><option value="high">Alta</option><option value="medium">Media</option><option value="low">Baja</option></select></label><label>Origen <select id="auditSource" onchange="vatRenderQualityIssues()"><option value="">Todos</option><option>Registro</option><option>Clínico</option><option>Agenda</option></select></label><label style="flex:1">Buscar <input id="qualitySearch" placeholder="Paciente, vacuna, lote o hallazgo" oninput="vatRenderQualityIssues()" style="width:100%"></label></div><div id="qualityIssues"></div></div>`;
+ vatRenderQualityIssues();
+}
+function vatRenderQualityIssues(){
+ const sev=document.getElementById('qualityFilter')?.value||'',source=document.getElementById('auditSource')?.value||'',q=(document.getElementById('qualitySearch')?.value||'').trim().toLowerCase(),box=document.getElementById('qualityIssues');if(!box)return;
+ const arr=vatAuditScan().filter(x=>(!sev||x.severity===sev)&&(!source||x.source===source)&&(!q||(x.type+' '+x.detail+' '+x.source+' '+(vatQualityPatient(x.patientId)?full(vatQualityPatient(x.patientId)):'')).toLowerCase().includes(q)));
+ if(!arr.length){box.innerHTML='<div class="success">No se encontraron hallazgos con estos filtros.</div>';return}
+ box.innerHTML=`<div class="audit-list">${arr.map(x=>{const p=vatQualityPatient(x.patientId);return `<div class="audit-item ${esc(x.severity)} ${x.source==='Clínico'?'clinical':''}"><div class="row" style="justify-content:space-between"><div>${vatQualityBadge(x.severity)} <span class="badge">${esc(x.source||'Registro')}</span> <b>${esc(x.type)}</b></div><small>${x.date?esc(formatDateMX(x.date)):''}</small></div><p>${esc(x.detail)}</p><p class="muted"><b>Acción:</b> ${esc(x.action)}</p><div class="row">${p?`<button class="btn primary" onclick="patientRecord(${JSON.stringify(p.id)})">Abrir expediente</button>`:''}${x.source==='Agenda'?`<button class="btn secondary" onclick="quick('agenda')">Abrir agenda</button>`:''}${!p&&x.source==='Registro'?`<button class="btn secondary" onclick="quick('inventory')">Abrir inventario</button>`:''}</div></div>`}).join('')}</div>`;
+}
+function vatExportAuditCSV(){const rows=[['Prioridad','Origen','Tipo','Paciente','Fecha','Hallazgo','Acción sugerida'],...vatAuditScan().map(x=>[vatQualityLabel(x.severity),x.source||'Registro',x.type,vatQualityPatient(x.patientId)?full(vatQualityPatient(x.patientId)):'',x.date||'',x.detail,x.action])];downloadCSV('auditoria_clinica_'+isoToday()+'.csv',rows)}
+function vatDashboardPatients(){
+ let due=0,outside=0;data.patients.forEach(p=>{if(!p.birth)return;try{const e=vatEngineEvaluate(p);if(e.items.some(x=>x.status==='due'&&x.kind!=='special'))due++;if(e.items.some(x=>x.status==='outOfTime'))outside++}catch(e){}});return{due,outside};
+}
+function dashboard(){
+ const today=isoToday(),todayV=data.vaccinations.filter(x=>x.date===today),todayA=data.appointments.filter(x=>x.date===today&&!['Cancelada'].includes(x.status)),next7=new Date(today+'T12:00:00');next7.setDate(next7.getDate()+7);const end7=next7.toISOString().slice(0,10),upcoming=data.appointments.filter(x=>x.date>=today&&x.date<=end7&&!['Atendida','Cancelada'].includes(x.status)),expired=data.inventory.filter(x=>x.expiry&&x.expiry<today&&Number(x.qty)>0),soon=data.inventory.filter(x=>x.expiry&&x.expiry>=today&&x.expiry<=end7&&Number(x.qty)>0),low=data.inventory.filter(x=>Number(x.qty)<=5),audit=vatAuditCounts(),clinical=vatDashboardPatients();
+ const recent=vatAuditScan().slice(0,5);
+ view.innerHTML=`<div class="vat-searchbar no-print"><input placeholder="Buscar paciente, CURP, teléfono, lote o cita" onkeydown="if(event.key==='Enter'){sessionStorage.setItem('vat_search_query',this.value);quick('universalSearch');setTimeout(()=>{const i=document.getElementById('vatGlobalSearch');if(i){i.value=sessionStorage.getItem('vat_search_query')||'';vatRenderUniversalSearch()}},50)}"><button class="btn secondary" onclick="quick('universalSearch')">Buscar</button></div>
+ <div class="grid section"><div class="card stat clickable" onclick="quick('patients')"><span>Pacientes registrados</span><b>${data.patients.length}</b><span class="metric-note">Abrir padrón</span></div><div class="card stat clickable" onclick="quick('vaccination')"><span>Vacunas aplicadas hoy</span><b>${todayV.length}</b><span class="metric-note">Registrar aplicación</span></div><div class="card stat clickable" onclick="quick('agenda')"><span>Citas de hoy</span><b>${todayA.length}</b><span class="metric-note">${upcoming.length} en próximos 7 días</span></div><div class="card stat clickable" onclick="quick('qualityCenter')"><span>Alertas prioritarias</span><b>${audit.critical+audit.high}</b><span class="metric-note">${audit.clinical} clínicas</span></div></div>
+ <div class="grid section"><div class="card stat clickable" onclick="quick('followUp')"><span>Pacientes con pendientes</span><b>${clinical.due}</b></div><div class="card stat clickable" onclick="quick('qualityCenter')"><span>Ventanas cerradas</span><b>${clinical.outside}</b></div><div class="card stat clickable" onclick="quick('inventory')"><span>Stock bajo</span><b>${low.length}</b></div><div class="card stat clickable" onclick="quick('inventory')"><span>Lotes caducados</span><b>${expired.length}</b><span class="metric-note">${soon.length} caducan en 7 días</span></div></div>
+ <div class="two section"><div class="card"><h3>Acciones rápidas</h3><div class="row"><button class="btn primary" onclick="quick('patients')">Registrar paciente</button><button class="btn primary" onclick="quick('vaccination')">Aplicar vacuna</button><button class="btn secondary" onclick="quick('agenda')">Agendar cita</button><button class="btn secondary" onclick="quick('qualityCenter')">Ejecutar auditoría</button></div><h3 class="section">Citas próximas</h3><div class="dash-list">${upcoming.slice(0,6).map(a=>`<div class="dash-row"><div><b>${esc(a.patient||'Paciente')}</b><div class="muted mini">${esc(a.reason||'Seguimiento')}</div></div><span>${formatDateMX(a.date)}</span></div>`).join('')||'<p class="muted">Sin citas próximas.</p>'}</div></div>
+ <div class="card"><div class="row" style="justify-content:space-between"><h3>Hallazgos prioritarios</h3><button class="btn secondary" onclick="quick('qualityCenter')">Ver todos</button></div><div class="dash-list">${recent.map(x=>{const p=vatQualityPatient(x.patientId);return `<div class="dash-row"><div><b>${esc(x.type)}</b><div class="muted mini">${p?esc(full(p))+' · ':''}${esc(x.detail)}</div></div>${p?`<button class="btn secondary" onclick="patientRecord(${JSON.stringify(p.id)})">Abrir</button>`:''}</div>`}).join('')||'<div class="success">Sin hallazgos prioritarios.</div>'}</div></div></div>
+ <div class="notice section"><b>Apoyo a la decisión:</b> confirma cartilla, antecedentes, contraindicaciones, disponibilidad y lineamientos vigentes antes de aplicar.</div>`;
+}
+var vatAuditTab161=tabs.find(t=>t[0]==='qualityCenter');if(vatAuditTab161)vatAuditTab161[1]='Auditor clínico';
+
+</script>
+
+<!-- v1.4.6 patch -->
+
+
+
+
+<meta content="Vacunas a Tiempo" name="application-name"/></head><body>
+<div class="login" id="login"><form autocomplete="off" class="card" id="loginForm"><h1 class="brand">💉 Vacunas a Tiempo</h1><p class="muted">Versión 1.9.5 · Base local IndexedDB</p><div class="field"><label for="user">Usuario</label><input autocomplete="username" id="user" name="user" required="" value="admin"/></div><div class="field"><label for="pass">Contraseña</label><input autocomplete="current-password" id="pass" name="pass" required="" type="password" value="admin123"/></div><label style="display:flex;gap:8px;align-items:center;margin:10px 0 14px"><input id="showPass" type="checkbox"/> Mostrar contraseña</label><button class="btn primary" id="loginButton" style="width:100%" type="submit">INICIAR SESIÓN</button><p aria-live="polite" class="muted" id="loginMsg" role="alert"></p></form></div>
+<div class="app hidden" id="app"><aside class="side"><h2>💉 Vacunas a Tiempo</h2><p style="color:#bdebd9">Centro de Salud Venustiano Carranza</p><div class="nav" id="nav"></div><hr style="border-color:#ffffff22"/><button class="btn secondary" onclick="signOut()">Cerrar sesión</button></aside><main class="main"><div class="top"><div><h2 id="title">Dashboard</h2><div class="muted" id="today"></div></div><div class="row"><span class="badge" id="saveState">Datos guardados</span><span class="badge">Administrador</span></div></div><div id="view"></div></main></div>
+<script src="js/core/idb-store.js"></script><script src="js/modules/module-01.js"></script><script id="vat-v165-script" src="js/modules/module-02-vat-v165-script.js"></script>
+
+<script id="vat-v166-script" src="js/modules/module-03-vat-v166-script.js"></script>
+
+<script id="vat-v170-script" src="js/modules/module-04-vat-v170-script.js"></script>
+
+<script id="vat-v171-script" src="js/modules/module-05-vat-v171-script.js"></script>
+
+<script id="vat-v180-script" src="js/modules/module-06-vat-v180-script.js"></script>
+
+<script id="vat-v185-script" src="js/modules/module-07-vat-v185-script.js"></script>
+
+<script id="vat-v190-script" src="js/modules/module-08-vat-v190-script.js"></script>
+
+<script id="vat-v191-module" src="js/modules/module-09-vat-v191-module.js"></script>
+
+<script id="vat-v192-module" src="js/modules/module-10-vat-v192-module.js"></script>
+
+<script id="vat-v193-module" src="js/modules/module-11-vat-v193-module.js"></script>
+</body></html>

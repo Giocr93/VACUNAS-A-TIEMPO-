@@ -1,0 +1,27 @@
+VACUNAS A TIEMPO v1.3.6
+Fecha: 19 de julio de 2026
+
+NUEVO
+- Módulo Captura inteligente en el menú principal.
+- Entrada por cámara o archivo de imagen.
+- Vista previa local del documento.
+- Filtro local en escala de grises y contraste para mejorar legibilidad.
+- Intento de OCR mediante TextDetector cuando el navegador lo admite.
+- Alternativa manual para pegar o corregir la transcripción.
+- Detección automática de CURP de 18 caracteres.
+- Obtención automática de fecha de nacimiento y sexo desde la CURP.
+- Sugerencia de nombre y apellidos a partir del texto capturado.
+- Pantalla de revisión antes de enviar datos al registro de pacientes.
+- Indicador de completitud de los datos detectados.
+
+QR DINÁMICO VAT2
+- El contenido del QR ahora incluye el número de vacunas registradas y la fecha de la última aplicación.
+- Detecta QR desactualizados cuando cambia el historial de vacunación.
+- Conserva compatibilidad de lectura con QR VAT1 de v1.3.5.
+
+SEGURIDAD Y PRIVACIDAD
+- Las imágenes se procesan localmente y no se guardan ni envían a internet.
+- Ningún dato extraído se registra sin revisión y confirmación del usuario.
+
+NOTA
+- El OCR automático depende del soporte TextDetector del navegador. Cuando no está disponible, la herramienta conserva la mejora de imagen y el análisis inteligente del texto transcrito.

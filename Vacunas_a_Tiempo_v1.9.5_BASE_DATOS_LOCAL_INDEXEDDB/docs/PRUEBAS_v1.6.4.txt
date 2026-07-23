@@ -1,0 +1,13 @@
+PRUEBAS DE CONTROL v1.6.4
+
+[OK] Archivo inicia con DOCTYPE válido.
+[OK] Solo se modificó la base v1.6.3.
+[OK] Todos los botones patientRecord usan argumentos JSON seguros.
+[OK] vatGoPatient usa argumentos JSON seguros.
+[OK] Se agregó normalización numérico/texto/UUID.
+[OK] Sintaxis del script principal validada con Node.js.
+[OK] Integridad del ZIP validada.
+
+PRUEBA DEL USUARIO
+- Abrir Pacientes y pulsar Expediente en varios registros.
+- Probar también desde Censo, Alertas, Seguimiento, Motor clínico y Auditoría.

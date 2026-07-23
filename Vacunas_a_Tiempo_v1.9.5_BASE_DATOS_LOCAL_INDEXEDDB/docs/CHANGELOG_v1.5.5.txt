@@ -1,0 +1,22 @@
+VACUNAS A TIEMPO v1.5.5
+========================
+
+BASE
+- Actualización construida directamente sobre v1.5.4.
+- Conserva la base local vat_v1_data y la compatibilidad con los registros existentes.
+
+MOTOR DE VACUNACIÓN 2026.4
+- Muestra la edad exacta y los días totales del paciente.
+- Calcula el porcentaje de avance sobre las dosis evaluables a la fecha.
+- Identifica la siguiente dosis calculada y su fecha mínima.
+- Muestra la fecha y la edad del paciente al momento de cada aplicación registrada.
+- Muestra el lote usado cuando está disponible.
+- Alerta cuando quedan 30 días o menos para cerrar una ventana de edad configurada.
+- Mejora el reconocimiento de dosis únicas, numeradas y refuerzos.
+- Añade esos datos a la exportación CSV del motor.
+
+EXPEDIENTE
+- El resumen del motor incluye el porcentaje de avance evaluable.
+
+SEGURIDAD
+- El motor continúa siendo una herramienta de apoyo. La aplicación debe confirmarse con cartilla, antecedentes, contraindicaciones y lineamientos institucionales vigentes.

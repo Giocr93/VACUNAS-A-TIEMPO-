@@ -1,0 +1,16 @@
+VACUNAS A TIEMPO v1.6.2
+
+NUEVO
+- Motor de decisión clínica explicado reutilizando el Motor de Vacunación existente.
+- Semáforo por paciente: al día, próxima vacuna, rezago o atención inmediata.
+- Clasificación visible: aplicar/valorar hoy, esperar/programar, no aplicar en esquema regular y criterio especial.
+- Comprobaciones visibles de fecha mínima, fecha objetivo, edad límite, intervalo e historial.
+- Sugerencia rápida mejorada en la pantalla de registro de vacunación.
+- Acceso para agendar la siguiente fecha calculada.
+
+SEGURIDAD
+- No modifica ni elimina registros automáticamente.
+- Las decisiones continúan siendo apoyo clínico y deben confirmarse con cartilla, antecedentes y lineamientos vigentes.
+
+COMPATIBILIDAD
+- Conserva la base local vat_v1_data y los datos de versiones anteriores.

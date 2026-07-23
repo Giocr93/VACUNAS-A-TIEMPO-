@@ -1,0 +1,17 @@
+VACUNAS A TIEMPO v1.4.1
+
+NUEVO: LECTOR INTELIGENTE DE CARTILLAS
+- Carga fotografías y PDF.
+- Vista previa y navegación por páginas de PDF.
+- OCR en español con progreso.
+- Preprocesamiento de contraste y blanco/negro.
+- Reconoce nombres frecuentes de biológicos y sinónimos.
+- Busca fecha, dosis y lote cerca de cada vacuna detectada.
+- Tabla editable de revisión antes de importar.
+- Importa antecedentes a la cartilla digital sin descontar inventario.
+- Evita duplicados por paciente, vacuna, dosis y fecha.
+- Exporta la revisión a CSV.
+- Registra el origen como cartilla OCR y exige verificación visual.
+
+NOTA
+La lectura automática puede cometer errores por sellos, escritura manual, reflejos o baja resolución. Toda fila debe revisarse contra la cartilla original antes de importar.

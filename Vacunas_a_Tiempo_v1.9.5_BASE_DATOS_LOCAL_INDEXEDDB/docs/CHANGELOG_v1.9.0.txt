@@ -1,0 +1,16 @@
+VACUNAS A TIEMPO v1.9.0 — MOTOR DE ESTADO DEL ESQUEMA
+
+NUEVO
+- Módulo “Estado del esquema”.
+- Estado general del paciente: sin pendientes, próxima dosis, disponible, recuperación o revisión.
+- Estado único por biológico: completa, disponible, recuperación, próxima, futura o requiere revisión.
+- Prioridades ordenadas para revisión profesional.
+- Explicación visible de cada estado.
+- Avance por biológicos y resumen cuantitativo.
+- Acceso para preparar captura sin guardar automáticamente.
+- Panel de información clínica configurada por biológico.
+- Resumen integral dentro del expediente.
+
+SEGURIDAD
+- El motor organiza y explica; no sustituye la decisión profesional.
+- Se conservan todos los módulos y datos de v1.8.5.

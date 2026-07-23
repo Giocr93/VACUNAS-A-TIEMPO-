@@ -1,0 +1,60 @@
+{
+  "styles_blocks": 15,
+  "inline_scripts": [
+    {
+      "file": "module-01.js",
+      "type": "classic",
+      "id": ""
+    },
+    {
+      "file": "module-02-vat-v165-script.js",
+      "type": "classic",
+      "id": "vat-v165-script"
+    },
+    {
+      "file": "module-03-vat-v166-script.js",
+      "type": "classic",
+      "id": "vat-v166-script"
+    },
+    {
+      "file": "module-04-vat-v170-script.js",
+      "type": "classic",
+      "id": "vat-v170-script"
+    },
+    {
+      "file": "module-05-vat-v171-script.js",
+      "type": "classic",
+      "id": "vat-v171-script"
+    },
+    {
+      "file": "module-06-vat-v180-script.js",
+      "type": "classic",
+      "id": "vat-v180-script"
+    },
+    {
+      "file": "module-07-vat-v185-script.js",
+      "type": "classic",
+      "id": "vat-v185-script"
+    },
+    {
+      "file": "module-08-vat-v190-script.js",
+      "type": "classic",
+      "id": "vat-v190-script"
+    },
+    {
+      "file": "module-09-vat-v191-module.js",
+      "type": "classic",
+      "id": "vat-v191-module"
+    },
+    {
+      "file": "module-10-vat-v192-module.js",
+      "type": "classic",
+      "id": "vat-v192-module"
+    },
+    {
+      "file": "module-11-vat-v193-module.js",
+      "type": "classic",
+      "id": "vat-v193-module"
+    }
+  ]
+}

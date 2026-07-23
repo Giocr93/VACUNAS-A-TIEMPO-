@@ -1,0 +1,19 @@
+VACUNAS A TIEMPO v1.6.5 — CAPTURA MÚLTIPLE
+
+BASE ESTABLE
+- v1.6.4 EXPEDIENTES FIX2 confirmada por el usuario como funcional.
+
+CAMBIOS
+- Captura dinámica de 1 a 20 vacunas por consulta.
+- Separación entre Aplicada hoy e Histórica / cartilla.
+- Las aplicaciones actuales descuentan inventario.
+- Los antecedentes históricos no modifican inventario.
+- Buscador de biológicos mientras se escribe.
+- Registro por vacuna de dosis, fecha, lote, caducidad, laboratorio, vía, sitio y observaciones.
+- Vacunador responsable compartido para toda la consulta.
+- Detección y confirmación de posibles duplicados.
+- Historial reciente identifica el tipo de registro.
+
+SEGURIDAD
+- No elimina ni transforma registros anteriores.
+- Conserva pacientes, expedientes, inventario, agenda, reportes, motor clínico y respaldos existentes.

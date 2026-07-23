@@ -1,0 +1,11 @@
+VACUNAS A TIEMPO v1.3.11
+
+CORRECCIONES OCR
+- Se eliminó la búsqueda de CURP por ventanas arbitrarias, causa de CURP falsas.
+- La CURP ahora se acepta únicamente si cumple estructura y fecha válida.
+- Se prioriza la CURP ubicada junto a la etiqueta CURP.
+- La fecha de nacimiento se obtiene primero de una CURP válida y después de la zona impresa de nacimiento.
+- Se corrigió el formato IMSS con apellidos junto a NOMBRE y nombres en la línea inferior.
+- Ya no se repiten apellidos dentro del campo Nombre.
+- Si la lectura es dudosa, el sistema deja el campo vacío en lugar de inventar o duplicar información.
+- El lector QR se conserva sin cambios porque fue validado correctamente.

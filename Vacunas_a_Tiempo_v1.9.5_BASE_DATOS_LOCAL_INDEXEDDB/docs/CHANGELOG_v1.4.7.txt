@@ -1,0 +1,14 @@
+VACUNAS A TIEMPO v1.4.7
+
+NUEVO
+- Centro de alertas operativo.
+- Búsqueda universal de pacientes, CURP, tutor, teléfono, lotes, biológicos y citas.
+- Exportación de alertas a CSV.
+- Indicador de alertas prioritarias en el dashboard.
+- Accesos directos desde cada alerta al expediente, agenda, WhatsApp o inventario.
+- Detección de citas vencidas, lotes caducados, próximos a caducar, existencias bajas, expedientes incompletos y CURP duplicadas.
+
+CORRECCIONES
+- Versión visual actualizada a 1.4.7.
+- Se conserva la barra lateral desplazable y todos los módulos anteriores.
+- Compatible con los datos guardados por versiones anteriores.

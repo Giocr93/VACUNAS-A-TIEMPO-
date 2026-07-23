@@ -1,0 +1,10 @@
+VACUNAS A TIEMPO v1.5.1
+
+- Núcleo del Motor de Vacunación 2026.
+- Cálculo de edad exacta al día de evaluación.
+- Reglas por edad, cohorte y número de dosis.
+- Semáforo: registrada, pendiente, próxima, futura y criterio especial.
+- Evaluación individual con exportación CSV.
+- Integración del motor en Vacunación y Expediente.
+- Incluye BCG, hepatitis B, hexavalente, rotavirus, neumocócica, influenza, COVID-19, SRP, hepatitis A, varicela y DPT.
+- Las decisiones clínicas deben validarse contra cartilla y lineamientos institucionales vigentes.

@@ -1,0 +1,13 @@
+VACUNAS A TIEMPO v1.6.3
+
+NUEVO: CARTILLA INTELIGENTE DE 0 A 9 AÑOS
+- El esquema del paciente ya no se presenta como una tabla técnica.
+- Nueva vista visual organizada por edades, semejante al flujo cotidiano de la Cartilla Nacional de Salud.
+- Recuadros interactivos por biológico y dosis.
+- Estados visuales: aplicada, aplicar/valorar hoy, próxima, fuera de oportunidad y revisión especial.
+- Al tocar un recuadro se abre la captura con paciente, vacuna y dosis preseleccionados.
+- La Cartilla Inteligente reutiliza el Motor de Vacunación y el Motor de Decisión Clínica existentes.
+- Se conserva el historial detallado, la recuperación, el semáforo y la auditoría clínica.
+
+SEGURIDAD
+La interfaz es apoyo operativo. Toda aplicación debe confirmarse con cartilla física, antecedentes, contraindicaciones, disponibilidad y lineamientos institucionales vigentes.

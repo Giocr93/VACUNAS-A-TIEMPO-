@@ -1,0 +1,47 @@
+VACUNAS A TIEMPO v1.9.3 · CARTILLA DIGITAL INTELIGENTE FASE 1
+
+VACUNAS A TIEMPO v1.9.2
+Asistente Inteligente de Captura
+
+VACUNAS A TIEMPO v1.9.1 - MOTOR DE CONSISTENCIA CLÍNICA
+
+VACUNAS A TIEMPO v1.9.0
+Motor de Estado del Esquema
+
+VACUNAS A TIEMPO v1.8.5
+Motor de validación educativa + mapa de recuperación de esquemas
+
+VACUNAS A TIEMPO v1.8.0
+
+VACUNAS A TIEMPO v1.6.3
+
+VACUNAS A TIEMPO v1.5.5 - WINDOWS 10
+
+1. Descomprime toda la carpeta.
+2. Abre ABRIR_VACUNAS_A_TIEMPO.bat.
+3. Usuario: admin
+4. Contraseña: admin123
+
+NUEVO
+- Módulo Calidad del registro.
+- Revisa duplicados, fechas incoherentes, vínculos rotos, lotes y existencias.
+- Permite exportar la revisión a CSV.
+
+CONSERVACIÓN
+Esta versión fue construida directamente sobre la v1.5.3. Conserva pacientes, vacunación, inventario, agenda, QR, captura inteligente, concentrado mensual, reportes y Motor de Vacunación 2026. Los datos existentes en el navegador usan la misma clave local vat_v1_data.
+
+IMPORTANTE
+Es una herramienta de apoyo. Confirma cartilla, antecedentes, contraindicaciones y lineamientos institucionales antes de aplicar o corregir registros.
+
+
+NOVEDADES v1.5.5
+- Edad al momento de cada dosis.
+- Porcentaje de avance evaluable.
+- Siguiente dosis calculada.
+- Alertas de ventana de oportunidad.
+
+NOVEDAD v1.6.3
+Abra el expediente de un paciente para ver la Cartilla Inteligente de 0 a 9 años. Toque un recuadro para registrar esa vacuna directamente.
+
+
+VERSIÓN 1.7.0: encabezado clínico permanente y sugerencia orientativa de sitios anatómicos, incluida coadministración en el mismo miembro con separación >=2.5 cm.

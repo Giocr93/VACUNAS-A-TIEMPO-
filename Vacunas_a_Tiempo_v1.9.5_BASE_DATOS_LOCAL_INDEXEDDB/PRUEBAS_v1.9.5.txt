@@ -1,0 +1,9 @@
+PRUEBAS RECOMENDADAS v1.9.5
+
+1. Ejecutar INICIAR_SERVIDOR.bat.
+2. Iniciar sesión y confirmar que todos los módulos abren.
+3. Registrar un paciente, una entrada de inventario y una cita.
+4. Cerrar y volver a abrir: los datos deben mantenerse.
+5. Navegar entre módulos y observar rutas como #/patients o #/inventory.
+6. Actualizar la página dentro de un módulo: debe conservar la vista.
+7. Confirmar que la cartilla, captura inteligente y auditor clínico siguen funcionando.

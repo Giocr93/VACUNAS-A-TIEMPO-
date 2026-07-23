@@ -1,0 +1,23 @@
+VACUNAS A TIEMPO — CAMBIOS v1.3.2
+
+CORRECCIONES
+- Se reparó el inicio de sesión mediante un formulario real y evento submit.
+- El botón funciona con clic y con la tecla Enter.
+- Se evitó depender de variables globales creadas automáticamente por los identificadores HTML.
+- Se agregó recuperación segura cuando localStorage contiene datos dañados.
+- Se agregó manejo de errores al guardar información.
+- Se conserva la sesión mientras la ventana permanezca abierta.
+
+LIMPIEZA Y ESTABILIDAD
+- Se retiraron las primeras declaraciones duplicadas de vaccination, applyVaccine, renderVaccinations y exportCSV.
+- Se conserva la implementación más nueva y completa de cada función.
+- Se añadió validación al cambiar de módulo para evitar pantallas en blanco.
+
+MEJORAS
+- Mostrar/ocultar contraseña.
+- Mensaje claro de credenciales de demostración.
+- Inicio automático de la aplicación cuando existe una sesión activa.
+
+CREDENCIALES
+Usuario: admin
+Contraseña: admin123

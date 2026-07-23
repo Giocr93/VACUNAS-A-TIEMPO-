@@ -1,0 +1,15 @@
+VACUNAS A TIEMPO v1.3.9
+
+CORRECCIONES
+- La Captura inteligente ya no coloca “IDENTIFICACIÓN” ni otros encabezados en el campo Nombre.
+- Se ampliaron las palabras descartadas por el analizador de OCR.
+- Se mejoró la búsqueda de nombre y apellidos usando etiquetas del documento.
+- Se reforzó la lectura de los QR generados por la propia aplicación.
+- El lector intenta varias escalas, margen blanco e inversión de imagen.
+- Se agregó un lector alternativo jsQR cuando el navegador no puede usar BarcodeDetector.
+- El PNG descargado ahora se genera en mayor resolución y con margen blanco adicional.
+- Se mejoraron los mensajes cuando el lector QR no está disponible o no reconoce la imagen.
+
+IMPORTANTE
+- Para cargar el lector alternativo jsQR se requiere conexión a internet al abrir el programa.
+- El QR generado no expone el nombre ni el teléfono dentro del código.

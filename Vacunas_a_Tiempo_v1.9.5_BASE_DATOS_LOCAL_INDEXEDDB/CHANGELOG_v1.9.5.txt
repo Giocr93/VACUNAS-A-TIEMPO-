@@ -1,0 +1,9 @@
+VACUNAS A TIEMPO v1.9.5 — BASE LOCAL INDEXEDDB
+
+- Se agregó una capa IndexedDB compatible con los datos existentes.
+- Los guardados actuales se duplican automáticamente en la base local robusta.
+- Si localStorage se pierde, el sistema puede recuperar la última copia IndexedDB.
+- Cada copia incorpora ID, fecha, versión y estado de sincronización.
+- Se agregó navegación interna mediante rutas hash sin modificar la interfaz.
+- Se conserva compatibilidad con v1.9.4.1 y sus módulos clínicos.
+- Aún no se activa Service Worker/PWA para proteger la estabilidad.

@@ -1,0 +1,29 @@
+VACUNAS A TIEMPO v1.3.4
+Fecha: 19 de julio de 2026
+
+AGENDA
+- Las citas ahora se pueden editar y reprogramar.
+- Se agregó búsqueda por paciente o motivo.
+- Se mejoraron filtros, contador y confirmación antes de eliminar.
+- Se mantiene el envío de recordatorios por WhatsApp.
+
+EXPEDIENTE
+- Expediente imprimible con datos del paciente, cartilla digital e historial de citas.
+- Accesos rápidos para agendar cita y enviar mensaje de seguimiento por WhatsApp.
+- Visualización destacada de la próxima cita.
+
+DASHBOARD
+- Contador de aplicaciones del mes.
+- Alertas de citas vencidas, bajo stock y lotes próximos a caducar.
+- Listas de prioridades para seguimiento e inventario.
+
+REPORTES
+- Filtro por rango de fechas.
+- Acceso rápido al mes actual o historial completo.
+- Resumen de citas programadas, atendidas y no asistencias.
+- Exportación CSV del periodo filtrado.
+
+ESTABILIDAD
+- Indicador visible de guardado.
+- Se conserva compatibilidad con los datos y respaldos de versiones anteriores.
+- Sintaxis JavaScript validada antes de empaquetar.

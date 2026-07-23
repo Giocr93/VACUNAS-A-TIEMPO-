@@ -1,0 +1,12 @@
+VACUNAS A TIEMPO v1.6.6
+
+- El motor clínico muestra una lista seleccionable de vacunas sugeridas.
+- Cada vacuna sugerida despliega un submenú sin abandonar la pantalla.
+- Permite registrar como aplicación actual o como antecedente de cartilla.
+- Permite seleccionar fecha de hoy o una fecha anterior.
+- Para aplicación actual permite elegir el lote vigente del inventario.
+- Para antecedente permite escribir el lote anterior anotado en cartilla.
+- Completa caducidad y laboratorio desde el lote en uso cuando existen.
+- Permite preparar varias vacunas sugeridas y agregarlas juntas al formulario.
+- Conserva la captura múltiple de hasta 20 vacunas y un solo guardado final.
+- Las aplicaciones actuales descuentan inventario; los antecedentes no.

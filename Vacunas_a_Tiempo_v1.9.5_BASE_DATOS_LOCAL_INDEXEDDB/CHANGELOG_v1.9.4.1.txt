@@ -1,0 +1,10 @@
+Vacunas a Tiempo v1.9.4.1
+
+- Reconstrucción correcta desde v1.9.3 estable.
+- Estructura web modular creada.
+- 15 bloques CSS trasladados a css/styles.css.
+- 11 scripts internos trasladados a js/modules, manteniendo su posición y orden de carga.
+- qr-local.js trasladado a js/vendor.
+- Servidor local estable para Windows.
+- Sin Service Worker ni caché durante esta fase de estabilización.
+- Archivo anterior Vacunas_a_Tiempo.html conservado como redirección compatible.

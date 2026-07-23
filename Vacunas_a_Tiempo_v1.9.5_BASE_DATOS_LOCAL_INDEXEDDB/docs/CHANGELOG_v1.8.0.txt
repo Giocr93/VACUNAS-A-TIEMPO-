@@ -1,0 +1,13 @@
+VACUNAS A TIEMPO v1.8.0
+
+NUEVO: MOTOR DE VALIDACIÓN EDUCATIVA
+- Revisión obligatoria antes de guardar una captura múltiple.
+- Cuatro niveles: error crítico, requiere revisión, observación e información.
+- Cada hallazgo responde: qué observó, qué significa, qué dice la normativa y qué debe revisar el profesional.
+- Calidad de captura expresada en porcentaje; no es calificación clínica.
+- Detecta fechas imposibles o futuras, falta de lote, lote sin existencia o caducado, posibles duplicidades, discordancias básicas de vía/sitio y registros históricos sin lote.
+- Señala intervalos cortos para revisión sin declarar automáticamente una dosis inválida.
+- Reconoce aplicaciones en el mismo miembro y recuerda separación mínima de 2.5 cm conforme a orientación OMS, sujeta a lineamientos y ficha técnica.
+- Confirmación profesional posterior a la revisión.
+- Cualquier modificación invalida automáticamente la revisión anterior.
+- La aplicación orienta y educa; la decisión final permanece en el profesional de salud.

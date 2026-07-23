@@ -1,0 +1,12 @@
+VACUNAS A TIEMPO v1.8.5
+
+- Nuevo módulo Recuperación de esquemas.
+- Agrupa las dosis faltantes por biológico.
+- En la primera jornada solo presenta la primera dosis faltante de cada serie.
+- Separa dosis posteriores y ventanas de edad cerradas.
+- Permite preparar una captura desde el mapa sin guardar automáticamente.
+- Exportación del mapa a CSV.
+- Acceso desde el expediente.
+- Mantiene la validación educativa obligatoria de v1.8.0.
+
+IMPORTANTE: es una herramienta educativa y de organización. No sustituye cartilla, valoración clínica, fichas técnicas ni lineamientos vigentes.

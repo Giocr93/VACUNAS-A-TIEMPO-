@@ -1,0 +1,12 @@
+VACUNAS A TIEMPO v1.6.4 · CORRECCIÓN DE EXPEDIENTES FIX 2
+
+Corrección aplicada:
+- Se incorporó la función de compatibilidad vatEngineNormalize().
+- La línea de tiempo del expediente y la cartilla inteligente ya no se detienen por ReferenceError.
+- Se conserva la apertura universal de expedientes para identificadores numéricos, texto y UUID.
+
+Causa confirmada:
+- El motor definía vatEngineNorm(), pero otros módulos llamaban vatEngineNormalize().
+- La diferencia de nombre detenía patientRecord() al construir la línea de tiempo.
+
+No se modificaron datos, diseño ni estructura de almacenamiento.

@@ -1,0 +1,16 @@
+VACUNAS A TIEMPO v1.6.1
+Auditor clínico y dashboard operativo
+
+NUEVO
+- Auditor clínico unificado: calidad del registro, agenda y alertas del motor clínico.
+- Detección de citas vencidas.
+- Identificación de pacientes con dosis pendientes y ventanas de oportunidad cerradas.
+- Filtros por prioridad, origen y búsqueda.
+- Acceso directo al expediente desde cada hallazgo.
+- Exportación de auditoría a CSV.
+- Dashboard ampliado con pacientes pendientes, ventanas cerradas, stock bajo, lotes caducados y citas próximas.
+- Tarjetas del dashboard con acceso directo a los módulos relacionados.
+
+SEGURIDAD
+- Ningún hallazgo modifica ni elimina registros automáticamente.
+- Se conserva la base local vat_v1_data y la compatibilidad con versiones anteriores.

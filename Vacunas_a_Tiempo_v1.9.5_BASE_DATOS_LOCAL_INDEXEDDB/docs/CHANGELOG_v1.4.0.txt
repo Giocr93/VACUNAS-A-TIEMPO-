@@ -1,0 +1,22 @@
+VACUNAS A TIEMPO v1.4.0
+
+NUEVO MÓDULO: SEGUIMIENTO Y REZAGOS
+- Clasifica pacientes por prioridad administrativa.
+- Detecta citas vencidas.
+- Identifica pacientes sin vacunas registradas.
+- Identifica pacientes sin cita próxima.
+- Señala más de 180 días sin aplicación y sin cita.
+- Buscador y filtros por estado.
+- Acceso directo al expediente.
+- Agenda cita desde el seguimiento.
+- Mensaje de WhatsApp configurable por situación.
+- Exportación CSV e impresión.
+- Indicador de seguimientos pendientes en el dashboard.
+
+OCR
+- Se conserva la mejora de v1.3.11 sin agregar cambios experimentales.
+
+QR
+- Se conserva sin cambios por haber sido validado correctamente.
+
+Nota: el módulo organiza seguimiento administrativo y no sustituye la valoración clínica ni los lineamientos vigentes.

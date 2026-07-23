@@ -1,0 +1,30 @@
+VACUNAS A TIEMPO v1.6.0
+========================
+
+BASE
+- Evolución directa de v1.5.5.
+- Conserva almacenamiento local vat_v1_data y funciones anteriores.
+
+NUEVO: EXPEDIENTE INTELIGENTE
+- Resumen de edad exacta, aplicaciones, pendientes y fuera de tiempo.
+- Barra de avance del esquema evaluable.
+- Panel “¿Qué hacer hoy?” construido sobre el Motor de Vacunación existente.
+- Separa dosis para valorar hoy, criterios especiales y dosis fuera de ventana.
+- Muestra siguiente dosis y fecha sugerida.
+- Compara la cita futura con la fecha sugerida por el motor.
+- Permite abrir vacunación o agendar la fecha sugerida con un clic.
+
+NUEVO: APOYO DE RECUPERACIÓN
+- Lista próximas dosis ordenadas por fecha mínima/objetivo.
+- Alertas de ventanas de oportunidad a 30 días o menos.
+- No crea un segundo motor: reutiliza las reglas clínicas existentes.
+
+MEJORA: LÍNEA DE TIEMPO
+- Aplicaciones en orden cronológico.
+- Edad exacta al momento de cada aplicación.
+- Lote y observaciones.
+- Intervalo en días entre aplicaciones del mismo biológico.
+
+SEGURIDAD
+- El análisis es apoyo a la decisión y no sustituye cartilla, antecedentes,
+  contraindicaciones ni lineamientos institucionales vigentes.
