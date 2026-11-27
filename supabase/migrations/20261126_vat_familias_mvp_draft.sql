@@ -39,7 +39,7 @@ create table if not exists public.family_vaccine_entries (
   family_member_id uuid not null references public.family_members(id) on delete cascade,
   vaccine_code text not null,
   dose_code text,
-  application_date date not null,
+  application_date date,
   lot_number text,
   manufacturer text,
   institution_name text,
