@@ -98,3 +98,26 @@ VAT Familias debe estar diseñado para personas con poca experiencia tecnológic
 - Las sugerencias de la app deben confirmarse por el usuario.
 - Mantener un **Modo manual avanzado** para quienes sí quieran capturar más detalles.
 - La foto de cartilla debe ser el camino preferido en una fase posterior.
+
+
+## Dos modos de captura
+
+VAT Familias ofrecerá dos experiencias para registrar antecedentes:
+
+### Modo asistido — recomendado
+Pensado para usuarios con poca experiencia tecnológica.
+- Una pregunta por pantalla.
+- Botones grandes.
+- Opciones “No sé” y “No aparece”.
+- Ayuda contextual.
+- Foto de cartilla como camino preferido cuando se implemente.
+- Resumen final antes de guardar.
+
+### Modo rápido
+Pensado para usuarios con mayor dominio tecnológico o conocimiento en salud.
+- Formulario compacto en una sola pantalla.
+- Vacuna, dosis, fecha, lote, institución y notas.
+- Mantiene las mismas validaciones y estados que el modo asistido.
+
+Ambos modos guardan el mismo modelo de datos. La diferencia es únicamente la interfaz de captura.
+El modo asistido se mostrará como opción recomendada por defecto, con acceso visible a “Prefiero capturar rápido”.
