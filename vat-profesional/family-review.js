@@ -23,8 +23,12 @@ async function loadQueue(){
     if(!session){
       qs('#authError').classList.remove('hidden');
       qs('#mainView').classList.add('hidden');
+      qs('#btnLogoutProfessional')?.classList.add('hidden');
       return;
     }
+    qs('#authError').classList.add('hidden');
+    qs('#mainView').classList.remove('hidden');
+    qs('#btnLogoutProfessional')?.classList.remove('hidden');
     qs('#sessionLabel').textContent=session.user.email||'Sesión profesional activa';
 
     const {data,error}=await sb.rpc('family_professional_review_queue',{p_status:currentStatus||null});
@@ -172,3 +176,34 @@ qs('#btnRefresh').onclick=loadQueue;
 loadQueue();
 qs('#closeEvidence').onclick=()=>{qs('#evidenceModal').classList.add('hidden');qs('#evidenceModalImg').removeAttribute('src')};
 qs('#evidenceModal').addEventListener('click',e=>{if(e.target===qs('#evidenceModal'))qs('#closeEvidence').click()});
+
+
+qs('#professionalLogin')?.addEventListener('submit',async e=>{
+  e.preventDefault();
+  const email=qs('#professionalEmail').value.trim();
+  const password=qs('#professionalPassword').value;
+  if(!email||!password){toast('Escribe correo y contraseña');return}
+  const btn=qs('#btnProfessionalLogin');
+  btn.disabled=true;
+  try{
+    const {error}=await sb.auth.signInWithPassword({email,password});
+    if(error)throw error;
+    await loadQueue();
+  }catch(err){
+    toast(err.message||'No fue posible iniciar sesión');
+  }finally{
+    btn.disabled=false;
+  }
+});
+
+qs('#btnLogoutProfessional')?.addEventListener('click',async()=>{
+  await sb.auth.signOut();
+  items=[];
+  qs('#queue').innerHTML='';
+  qs('#countLabel').textContent='0 registros';
+  qs('#sessionLabel').textContent='';
+  qs('#mainView').classList.add('hidden');
+  qs('#authError').classList.remove('hidden');
+  qs('#btnLogoutProfessional').classList.add('hidden');
+  toast('Sesión cerrada');
+});
