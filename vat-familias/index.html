@@ -36,8 +36,10 @@
         </div>
         <div class="stack">
           <button id="btnStart" class="primary" type="button">Crear mi cuenta familiar</button>
-          <button id="btnLinkExisting" class="secondary" type="button">Ya tengo un QR de Vacunas a Tiempo</button>
+          <button id="btnLogin" class="secondary" type="button">Ya tengo cuenta · Iniciar sesión</button>
+          <button id="btnLinkExisting" class="ghost" type="button">Vincular una cartilla existente con QR</button>
         </div>
+        <p class="muted small-text">No necesitas QR para crear una cuenta familiar ni para iniciar sesión.</p>
         <div class="professional-entry">
           <span>¿Eres personal de salud?</span>
           <a href="https://vacunasatiempo.netlify.app/" rel="noopener">Entrar a Vacunas a Tiempo Profesional →</a>
@@ -69,8 +71,27 @@
             <span>Acepto usar VAT Familias para organizar información de vacunación familiar.</span>
           </label>
           <button class="primary full" type="submit">Crear cuenta</button>
-          <button id="btnExistingAccount" class="secondary full" type="button">Ya tengo cuenta · Iniciar sesión</button>
         </form>
+      </div>
+    </section>
+
+    <section id="viewLogin" class="view">
+      <div class="card">
+        <button class="back" data-back="welcome" type="button">← Regresar</button>
+        <h2>Iniciar sesión</h2>
+        <p class="muted">Entra con la cuenta familiar que ya creaste. No necesitas tener QR ni estar registrado previamente en Vacunas a Tiempo Profesional.</p>
+        <form id="loginForm" class="form-grid">
+          <label>Correo
+            <input id="loginEmail" type="email" autocomplete="username" placeholder="correo@ejemplo.com" required>
+          </label>
+          <label>Contraseña
+            <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Tu contraseña" required>
+          </label>
+          <button class="primary full" type="submit">Entrar a mi cuenta</button>
+        </form>
+        <div class="notice">
+          <strong>¿No tienes cuenta?</strong> Regresa y elige “Crear mi cuenta familiar”.
+        </div>
       </div>
     </section>
 
