@@ -61,3 +61,11 @@ button{cursor:pointer}.shell{max-width:820px;margin:auto;padding:16px 16px 48px}
 .qr-scanner p{color:#dff7f2;text-align:center;margin:10px 0 4px}
 .qr-scanner .ghost{color:#fff}
 @media(max-width:600px){.topbar{align-items:flex-start}.top-actions{max-width:48%}.section-title{align-items:flex-start;flex-direction:column}.qr-guide{width:70%}}
+
+
+.audience-badge{display:inline-block;margin:4px 0 8px;background:var(--soft);color:var(--brand);border:1px solid #b9d9d3;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800}
+.professional-entry{margin-top:20px;padding-top:18px;border-top:1px solid var(--line);display:grid;gap:5px;text-align:center}
+.professional-entry span{font-size:13px;color:var(--muted)}
+.professional-entry a{color:var(--brand);font-weight:800;text-decoration:none}
+.professional-entry a:hover{text-decoration:underline}
+.professional-entry small{color:var(--muted);font-size:11px}
