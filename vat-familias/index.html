@@ -18,7 +18,10 @@
           <span>Tu cartilla de vacunación, siempre contigo</span>
         </div>
       </div>
-      <button id="btnReset" class="ghost small hidden" type="button">Reiniciar demo</button>
+      <div class="top-actions">
+        <span id="connectionBadge" class="connection-badge">En línea</span>
+        <button id="btnReset" class="ghost small hidden" type="button">Reiniciar demo</button>
+      </div>
     </header>
 
     <section id="viewWelcome" class="view active">
@@ -159,7 +162,13 @@
           <div class="schedule-loading">Calculando próximas vacunas…</div>
         </section>
 
-        <div class="section-title"><h3>Vacunas registradas</h3></div>
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">CARTILLA DIGITAL</p>
+            <h3>Esquema de vacunación</h3>
+          </div>
+          <span id="cardSyncState" class="muted small-text"></span>
+        </div>
         <div id="vaccineList" class="vaccine-list"></div>
         <div id="emptyVaccines" class="empty-inline">
           <p>No hay vacunas capturadas todavía.</p>
@@ -221,6 +230,9 @@
             <button type="button" data-vaccine="Influenza">Influenza</button>
             <button type="button" data-vaccine="COVID-19">COVID-19</button>
             <button type="button" data-vaccine="VPH">VPH</button>
+            <button type="button" data-vaccine="Hepatitis A">Hepatitis A</button>
+            <button type="button" data-vaccine="Varicela">Varicela</button>
+            <button type="button" data-vaccine="Meningococo">Meningococo</button>
             <button type="button" data-vaccine="TD / Td">TD / Td</button>
             <button type="button" data-vaccine="TDPA / Tdap">TDPA / Tdap</button>
             <button type="button" data-vaccine="No sé">No sé / No estoy seguro</button>
@@ -298,6 +310,9 @@
               <option>Influenza</option>
               <option>COVID-19</option>
               <option>VPH</option>
+              <option>Hepatitis A</option>
+              <option>Varicela</option>
+              <option>Meningococo</option>
               <option>TD / Td</option>
               <option>TDPA / Tdap</option>
               <option>Otra</option>
@@ -339,8 +354,18 @@
         <p class="muted">Usa el QR o los datos que aparecen en el acceso familiar. No se creará otro paciente.</p>
 
         <div class="notice">
-          <strong>Opción más fácil:</strong> pega aquí el contenido del QR o el enlace si ya lo tienes abierto.
+          <strong>Opción más fácil:</strong> escanea el QR con la cámara. Si tu navegador no lo permite, puedes pegar el contenido o capturar folio y código manualmente.
         </div>
+
+        <button id="btnScanQr" class="primary full" type="button">📷 Escanear QR con cámara</button>
+        <div id="qrScanner" class="qr-scanner hidden">
+          <video id="qrVideo" playsinline muted></video>
+          <div class="qr-guide" aria-hidden="true"></div>
+          <p id="qrScanStatus" class="muted">Apunta la cámara al código QR.</p>
+          <button id="btnStopQr" class="ghost full" type="button">Cancelar escaneo</button>
+        </div>
+
+        <div class="divider"><span>o pega el contenido del QR</span></div>
 
         <label>QR / enlace
           <textarea id="linkQrText" rows="3" placeholder="Pega aquí el enlace o contenido del QR"></textarea>
