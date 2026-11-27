@@ -13,6 +13,8 @@ let assistedDraft={cartilla:null,name:'',date:'',dose:'',lot:'',institution:'',n
 let assistedStep=1;
 let quickEvidenceFile=null;
 let assistEvidenceFile=null;
+let activeQrStream=null;
+let qrScanTimer=null;
 
 function defaultState(){return {account:null,members:[]}}
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||defaultState()}catch{return defaultState()}}
@@ -50,22 +52,72 @@ function renderHome(){
   qs('#btnReset').classList.toggle('hidden',!state.account);
 }
 
+function renderVaccineHistory(member,vaccines,sourceLabel){
+  const vl=qs('#vaccineList');vl.innerHTML='';
+  const list=[...(vaccines||[])].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  qs('#emptyVaccines').classList.toggle('hidden',list.length>0);
+  list.forEach(v=>{
+    const el=document.createElement('div');
+    const sm=vaccineStatusMeta(v);
+    const recordClass=sm.cls==='professional'?'professional-record':sm.cls==='verified'?'verified-record':'family-record';
+    el.className='vaccine-row '+recordClass;
+    el.innerHTML=`<div class="vaccine-row-top"><strong>${escapeHtml(v.name||'Vacuna')}</strong><span class="status ${sm.cls}">${escapeHtml(sm.label)}</span></div><small>${escapeHtml(v.dose||'Dosis no especificada')} · ${escapeHtml(v.date||'Fecha no especificada')}</small><small>${v.lot?'Lote '+escapeHtml(v.lot)+' · ':''}${escapeHtml(v.institution||'')}</small>`;
+    vl.appendChild(el);
+  });
+  const s=qs('#cardSyncState');
+  if(s)s.textContent=sourceLabel||'';
+}
+
+function unifiedRecordsFromInput(input,member){
+  const all=[];
+  for(const v of (input?.professional_vaccinations||[])) all.push({
+    id:v.id,name:v.vaccine,dose:v.dose||'',date:v.date||'',lot:v.lot||'',
+    institution:v.institution||v.healthUnit||'',source:'profesional',status:'profesional'
+  });
+  for(const v of (input?.verified_family_vaccinations||[])) all.push({
+    id:v.id,name:v.vaccine,dose:v.dose||'',date:v.date||'',lot:v.lot||'',
+    institution:v.institution||'',source:'familia_verificada',status:'verificado'
+  });
+  for(const v of (input?.unverified_family_vaccinations||[])) all.push({
+    id:v.id,name:v.vaccine,dose:v.dose||'',date:v.date||'',lot:v.lot||'',
+    institution:v.institution||'',source:'familia',status:v.verification_status||'capturado_familia'
+  });
+  if(!all.length) return member.vaccines||[];
+  const seen=new Set();
+  return all.filter(v=>{
+    const key=[v.source==='profesional'?'P':'F',v.name,v.dose,v.date,v.lot].map(x=>String(x||'').trim().toLowerCase()).join('|');
+    if(seen.has(key))return false;
+    seen.add(key);return true;
+  });
+}
+
+async function refreshUnifiedCard(member){
+  const memberId=member.id;
+  try{
+    const input=preloadedInput||await getScheduleInput(member);
+    if(currentMemberId!==memberId)return;
+    const records=unifiedRecordsFromInput(input,member);
+    member.cardCache=records;
+    member.cardCacheAt=new Date().toISOString();
+    save();
+    renderVaccineHistory(member,records,backendReady?'Sincronizada con Vacunas a Tiempo':'Datos de este dispositivo');
+    await renderMemberSchedule(member,input);
+  }catch(err){
+    console.warn('VAT cartilla unificada',err);
+    const fallback=member.cardCache?.length?member.cardCache:(member.vaccines||[]);
+    renderVaccineHistory(member,fallback,member.cardCacheAt?'Última copia disponible':'Datos de este dispositivo');
+    await renderMemberSchedule(member).catch(()=>{});
+  }
+}
+
 function renderCard(){
   const m=state.members.find(x=>x.id===currentMemberId);
   if(!m){show('home');return}
   qs('#cardMemberName').textContent=m.name;
   const bits=[];if(m.dob)bits.push(years(m.dob)+' años');if(m.curp)bits.push(m.curp);
   qs('#cardMemberMeta').textContent=bits.join(' · ');
-  const vl=qs('#vaccineList');vl.innerHTML='';
-  const vaccines=[...(m.vaccines||[])].sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-  qs('#emptyVaccines').classList.toggle('hidden',vaccines.length>0);
-  vaccines.forEach(v=>{
-    const el=document.createElement('div');el.className='vaccine-row';
-    const sm=vaccineStatusMeta(v);
-    el.innerHTML=`<div class="vaccine-row-top"><strong>${escapeHtml(v.name)}</strong><span class="status ${sm.cls}">${escapeHtml(sm.label)}</span></div><small>${escapeHtml(v.dose||'Dosis no especificada')} · ${escapeHtml(v.date||'Fecha no especificada')}</small><small>${v.lot?'Lote '+escapeHtml(v.lot)+' · ':''}${escapeHtml(v.institution||'')}</small>`;
-    vl.appendChild(el);
-  });
-  renderMemberSchedule(m);
+  renderVaccineHistory(m,m.cardCache?.length?m.cardCache:(m.vaccines||[]),m.cardCacheAt?'Última copia disponible':'Datos de este dispositivo');
+  refreshUnifiedCard(m);
 }
 
 function vaccineStatusMeta(v){
@@ -212,6 +264,65 @@ qs('#btnParseQr').onclick=()=>{
 
 qs('#linkFolio').addEventListener('input',()=>showLinkPreview(qs('#linkFolio').value.trim(),qs('#linkToken').value.trim()));
 qs('#linkToken').addEventListener('input',()=>showLinkPreview(qs('#linkFolio').value.trim(),qs('#linkToken').value.trim()));
+
+function stopQrScanner(){
+  if(qrScanTimer){clearTimeout(qrScanTimer);qrScanTimer=null}
+  if(activeQrStream){
+    activeQrStream.getTracks().forEach(t=>t.stop());
+    activeQrStream=null;
+  }
+  const video=qs('#qrVideo');
+  if(video){video.pause();video.srcObject=null}
+  qs('#qrScanner')?.classList.add('hidden');
+}
+
+async function startQrScanner(){
+  if(!navigator.mediaDevices?.getUserMedia){
+    toast('Este navegador no permite usar la cámara. Usa el folio o pega el QR.');
+    return;
+  }
+  if(!('BarcodeDetector' in window)){
+    toast('El lector directo no está disponible aquí. Usa el folio o pega el contenido del QR.');
+    return;
+  }
+  try{
+    const supported=await BarcodeDetector.getSupportedFormats?.();
+    if(Array.isArray(supported) && !supported.includes('qr_code')) throw new Error('QR no compatible');
+    const detector=new BarcodeDetector({formats:['qr_code']});
+    activeQrStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    const video=qs('#qrVideo');
+    qs('#qrScanner').classList.remove('hidden');
+    video.srcObject=activeQrStream;
+    await video.play();
+    qs('#qrScanStatus').textContent='Apunta la cámara al código QR.';
+    const scan=async()=>{
+      if(!activeQrStream)return;
+      try{
+        const codes=await detector.detect(video);
+        const raw=codes?.[0]?.rawValue||'';
+        if(raw){
+          const parsed=parsePortalCredentials(raw);
+          qs('#linkQrText').value=raw;
+          if(parsed.folio)qs('#linkFolio').value=parsed.folio;
+          if(parsed.token)qs('#linkToken').value=parsed.token;
+          showLinkPreview(qs('#linkFolio').value.trim(),qs('#linkToken').value.trim());
+          stopQrScanner();
+          toast(parsed.folio||parsed.token?'QR leído correctamente':'QR leído; revisa los datos detectados');
+          return;
+        }
+      }catch(err){console.warn('QR scan',err)}
+      qrScanTimer=setTimeout(scan,250);
+    };
+    scan();
+  }catch(err){
+    stopQrScanner();
+    toast(err?.name==='NotAllowedError'?'No se autorizó la cámara':'No fue posible iniciar el lector QR');
+  }
+}
+
+qs('#btnScanQr')?.addEventListener('click',startQrScanner);
+qs('#btnStopQr')?.addEventListener('click',stopQrScanner);
+
 
 qs('#btnMockLink').onclick=async()=>{
   const folio=qs('#linkFolio').value.trim();
@@ -546,6 +657,21 @@ async function logoutFamily(){
 
 qs('#btnLogout').onclick=()=>logoutFamily();
 
+function updateConnectionBadge(){
+  const badge=qs('#connectionBadge');if(!badge)return;
+  const online=navigator.onLine;
+  badge.textContent=online?'En línea':'Sin conexión';
+  badge.classList.toggle('offline',!online);
+}
+window.addEventListener('online',()=>{
+  updateConnectionBadge();
+  const m=state.members.find(x=>x.id===currentMemberId);
+  if(m && document.querySelector('#viewCard.active'))refreshUnifiedCard(m);
+});
+window.addEventListener('offline',updateConnectionBadge);
+updateConnectionBadge();
+
+
 
 function bindEvidencePicker(inputSelector,previewSelector,setter){
   const input=qs(inputSelector), preview=qs(previewSelector);
@@ -649,7 +775,7 @@ async function getScheduleInput(member){
   };
 }
 
-async function renderMemberSchedule(member){
+async function renderMemberSchedule(member,preloadedInput){
   const panel=qs('#schedulePanel');if(!panel)return;
   const memberId=member.id;
   panel.innerHTML='<div class="schedule-loading">Calculando próximas vacunas…</div>';
