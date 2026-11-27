@@ -15,12 +15,25 @@
         <h1>Antecedentes familiares</h1>
         <p class="muted">Revisa información capturada por las familias antes de considerarla verificada.</p>
       </div>
-      <button id="btnRefresh" type="button">Actualizar</button>
+      <div class="top-actions">
+        <button id="btnRefresh" type="button">Actualizar</button>
+        <button id="btnLogoutProfessional" class="secondary hidden" type="button">Cerrar sesión</button>
+      </div>
     </header>
 
     <section id="authError" class="card hidden">
-      <h2>Se requiere sesión profesional</h2>
-      <p>Abre esta pantalla desde una sesión activa de Vacunas a Tiempo.</p>
+      <h2>Acceso profesional</h2>
+      <p>Inicia sesión con tu cuenta autorizada de Vacunas a Tiempo.</p>
+      <form id="professionalLogin" class="login-form">
+        <label>Correo
+          <input id="professionalEmail" type="email" autocomplete="username" required placeholder="correo@ejemplo.com">
+        </label>
+        <label>Contraseña
+          <input id="professionalPassword" type="password" autocomplete="current-password" required>
+        </label>
+        <button id="btnProfessionalLogin" type="submit">Iniciar sesión</button>
+      </form>
+      <p class="muted small">Solo podrán abrir la bandeja los perfiles profesionales activos autorizados por VAT.</p>
     </section>
 
     <section id="mainView">
