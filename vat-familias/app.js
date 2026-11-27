@@ -94,7 +94,7 @@ function unifiedRecordsFromInput(input,member){
 async function refreshUnifiedCard(member){
   const memberId=member.id;
   try{
-    const input=preloadedInput||await getScheduleInput(member);
+    const input=await getScheduleInput(member);
     if(currentMemberId!==memberId)return;
     const records=unifiedRecordsFromInput(input,member);
     member.cardCache=records;
