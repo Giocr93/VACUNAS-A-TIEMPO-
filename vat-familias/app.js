@@ -429,7 +429,7 @@ async function registerFamilyAccount(name,phone,email,password){
     password,
     options:{
       data:{display_name:name},
-      emailRedirectTo:new URL('./',location.href).href
+      emailRedirectTo:new URL('index.html',location.href).href
     }
   });
   if(error)throw error;
