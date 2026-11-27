@@ -35,3 +35,11 @@ button{cursor:pointer}.shell{max-width:820px;margin:auto;padding:16px 16px 48px}
 
 .evidence-picker{border:1px dashed #a9c9c3;border-radius:15px;padding:14px;background:#fbfefd}
 .evidence-picker p{margin:5px 0 11px}.photo-button{display:inline-block;background:var(--soft);color:var(--brand);border:1px solid #b9d9d3;border-radius:13px;padding:11px 14px;font-weight:800;cursor:pointer}.file-hidden{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}.evidence-preview{display:block;width:100%;max-height:320px;object-fit:contain;border-radius:12px;margin-top:12px;border:1px solid var(--line);background:#fff}
+
+.schedule-panel{margin:16px 0 20px}.schedule-loading{background:var(--soft);border-radius:16px;padding:16px;color:var(--muted)}
+.schedule-overview{border:1px solid var(--line);border-radius:18px;padding:16px;background:linear-gradient(180deg,#fbfffe,#f3faf8)}
+.schedule-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.schedule-top h3{margin:2px 0 4px}.schedule-score{min-width:68px;text-align:center;background:#fff;border:1px solid var(--line);border-radius:15px;padding:9px}.schedule-score b{display:block;font-size:21px}.schedule-score small{color:var(--muted)}
+.schedule-next{background:#fff;border:1px solid var(--line);border-radius:15px;padding:14px;margin-top:12px}.schedule-next strong{display:block;font-size:18px}.schedule-next .date{color:var(--brand);font-weight:800;margin-top:5px}.schedule-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.schedule-alert{margin-top:10px;border-radius:13px;padding:10px 12px;background:#fff3cd;color:#735b00;font-size:13px}.schedule-ok{margin-top:10px;border-radius:13px;padding:10px 12px;background:#dff5e5;color:#216a37;font-size:13px}.schedule-due{display:grid;gap:8px;margin-top:12px}.schedule-dose{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding-top:9px}.schedule-dose small{color:var(--muted)}.section-title{margin:18px 2px 8px}.section-title h3{margin:0}
+.reminder-saved{background:#e4f4ff!important;color:#245b82!important}
+@media(max-width:600px){.schedule-top{flex-direction:column}.schedule-score{min-width:0;width:100%}.schedule-dose{flex-direction:column}}
