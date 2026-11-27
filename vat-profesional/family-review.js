@@ -63,10 +63,11 @@ function render(){
       </div>
       <div class="meta">
         <div><span>Institución</span><strong>${esc(x.institution_name||'No especificada')}</strong></div>
-        <div><span>Evidencias</span><strong>${Number(x.evidence_count||0)}</strong></div>
+        <div><span>Evidencias</span><strong>${(x.evidence||[]).length}</strong></div>
         <div><span>Registro profesional</span><strong>${x.patient_record_id?'Vinculado':'No vinculado'}</strong></div>
         <div><span>Observación familiar</span><strong>${esc(x.notes||'Sin notas')}</strong></div>
       </div>
+      ${(x.evidence||[]).length?'<div class="evidence-gallery" data-gallery="'+esc(x.entry_id)+'"></div>':''}
       <div class="notes">
         <textarea data-notes="${esc(x.entry_id)}" placeholder="Observaciones de la revisión (opcional)"></textarea>
       </div>
@@ -79,6 +80,35 @@ function render(){
     q.appendChild(card);
   });
   qsa('[data-action]').forEach(b=>b.onclick=()=>review(b.dataset.id,b.dataset.action));
+  loadEvidenceImages();
+}
+
+async function loadEvidenceImages(){
+  for(const x of items){
+    const gallery=qs('[data-gallery="'+CSS.escape(x.entry_id)+'"]');
+    if(!gallery)continue;
+    for(const ev of (x.evidence||[])){
+      const wrap=document.createElement('button');
+      wrap.className='evidence-thumb';wrap.type='button';wrap.textContent='Cargando foto…';
+      gallery.appendChild(wrap);
+      try{
+        const {data,error}=await sb.storage.from(ev.bucket||'family-evidence').download(ev.path);
+        if(error)throw error;
+        const url=URL.createObjectURL(data);
+        wrap.innerHTML='<img src="'+url+'" alt="Evidencia de cartilla"><span>Ver foto</span>';
+        wrap.onclick=()=>openEvidence(url);
+      }catch(err){
+        wrap.textContent='No se pudo cargar la foto';
+        wrap.disabled=true;
+      }
+    }
+  }
+}
+
+function openEvidence(url){
+  const modal=qs('#evidenceModal');
+  const img=qs('#evidenceModalImg');
+  img.src=url;modal.classList.remove('hidden');
 }
 
 async function review(entryId,decision){
@@ -112,3 +142,5 @@ qsa('.filter').forEach(b=>b.onclick=()=>{
 });
 qs('#btnRefresh').onclick=loadQueue;
 loadQueue();
+qs('#closeEvidence').onclick=()=>{qs('#evidenceModal').classList.add('hidden');qs('#evidenceModalImg').removeAttribute('src')};
+qs('#evidenceModal').addEventListener('click',e=>{if(e.target===qs('#evidenceModal'))qs('#closeEvidence').click()});
