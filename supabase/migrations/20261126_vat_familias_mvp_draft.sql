@@ -84,8 +84,9 @@ create table if not exists public.family_evidence (
 create table if not exists public.family_links (
   id uuid primary key default gen_random_uuid(),
   family_member_id uuid not null references public.family_members(id) on delete cascade,
-  patient_id uuid not null references public.patients(id) on delete cascade,
-  unit_id uuid references public.units(id) on delete set null,
+  patient_id uuid references public.patients(id) on delete set null,
+  unit_id uuid not null references public.units(id) on delete restrict,
+  patient_record_id text not null,
   link_method text not null default 'qr'
     check (link_method in ('qr','folio','curp','manual_profesional')),
   status text not null default 'pendiente'
@@ -97,8 +98,8 @@ create table if not exists public.family_links (
   notes text
 );
 
-create unique index if not exists family_links_active_member_patient_uidx
-  on public.family_links(family_member_id, patient_id)
+create unique index if not exists family_links_active_member_record_uidx
+  on public.family_links(family_member_id, unit_id, patient_record_id)
   where status in ('pendiente','aprobado');
 
 alter table public.family_accounts enable row level security;
@@ -236,3 +237,116 @@ with check (
 
 comment on table public.family_vaccine_entries is
 'Antecedentes de vacunacion capturados por familias. Nunca sustituyen automaticamente public.vaccinations; requieren verificacion profesional para vincularse.';
+
+
+-- Vincula un integrante familiar a un acceso existente del Portal Familiar.
+-- No crea ni duplica pacientes; conserva unit_id + patient_record_id como identidad
+-- compatible con la arquitectura actual basada en sync_records.
+create or replace function public.family_app_link_from_portal(
+  p_family_member_id uuid,
+  p_folio text,
+  p_token text
+) returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  acct public.family_accounts%rowtype;
+  member public.family_members%rowtype;
+  fa public.family_portal_access%rowtype;
+  pr public.sync_records%rowtype;
+  cp public.patients%rowtype;
+  link_id uuid;
+  patient_name text;
+begin
+  if auth.uid() is null then
+    return jsonb_build_object('ok',false,'error','not_authenticated');
+  end if;
+
+  select fm.* into member
+  from public.family_members fm
+  join public.family_accounts a on a.id=fm.family_account_id
+  where fm.id=p_family_member_id and a.user_id=auth.uid()
+  limit 1;
+
+  if not found then
+    return jsonb_build_object('ok',false,'error','member_not_found');
+  end if;
+
+  if coalesce(length(trim(p_folio)),0) < 4 or coalesce(length(trim(p_token)),0) < 4 then
+    return jsonb_build_object('ok',false,'error','invalid_credentials');
+  end if;
+
+  select a.* into fa
+  from public.family_portal_access a
+  where a.active=true
+    and upper(a.folio)=upper(trim(p_folio))
+    and (a.access_token=trim(p_token) or coalesce(a.access_code,'')=trim(p_token))
+  order by a.updated_at desc
+  limit 1;
+
+  if not found then
+    return jsonb_build_object('ok',false,'error','not_found');
+  end if;
+
+  select * into pr
+  from public.sync_records r
+  where r.unit_id=fa.unit_id
+    and r.entity='patients'
+    and r.record_id=fa.patient_record_id
+    and r.deleted=false
+  limit 1;
+
+  if not found then
+    return jsonb_build_object('ok',false,'error','patient_not_found');
+  end if;
+
+  select * into cp
+  from public.patients p
+  where p.unit_id=fa.unit_id
+    and p.local_id=fa.patient_record_id
+    and p.deleted=false
+  limit 1;
+
+  patient_name := trim(concat_ws(' ',
+    coalesce(pr.payload->>'name', cp.first_name),
+    coalesce(pr.payload->>'pat', cp.paternal_surname),
+    coalesce(pr.payload->>'mat', cp.maternal_surname)
+  ));
+
+  insert into public.family_links(
+    family_member_id, patient_id, unit_id, patient_record_id,
+    link_method, status, requested_by, approved_by, requested_at, approved_at
+  ) values (
+    member.id, cp.id, fa.unit_id, fa.patient_record_id,
+    'qr', 'aprobado', auth.uid(), auth.uid(), now(), now()
+  )
+  on conflict (family_member_id, unit_id, patient_record_id)
+    where status in ('pendiente','aprobado')
+  do update set
+    status='aprobado',
+    approved_by=auth.uid(),
+    approved_at=now()
+  returning id into link_id;
+
+  update public.family_members
+  set linked_patient_id=coalesce(cp.id, linked_patient_id),
+      link_status='vinculado',
+      updated_at=now()
+  where id=member.id;
+
+  return jsonb_build_object(
+    'ok',true,
+    'link_id',link_id,
+    'unit_id',fa.unit_id,
+    'patient_record_id',fa.patient_record_id,
+    'patient_id',cp.id,
+    'patient_name',patient_name,
+    'folio',fa.folio
+  );
+end;
+$$;
+
+revoke all on function public.family_app_link_from_portal(uuid,text,text) from public;
+grant execute on function public.family_app_link_from_portal(uuid,text,text) to authenticated;
