@@ -1,6 +1,8 @@
 const KEY='vat_familias_mvp_demo_v1';
 let state=load();
 let currentMemberId=null;
+let assistedDraft={cartilla:null,name:'',date:'',dose:'',lot:'',institution:'',notes:''};
+let assistedStep=1;
 
 function defaultState(){return {account:null,members:[]}}
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||defaultState()}catch{return defaultState()}}
@@ -77,7 +79,7 @@ qs('#memberForm').onsubmit=e=>{
 };
 
 qs('#btnAddVaccine').onclick=()=>show('captureMode');
-qs('#btnAssistedMode').onclick=()=>{toast('El asistente paso a paso se construye en la siguiente fase');show('vaccine')};
+qs('#btnAssistedMode').onclick=()=>startAssisted();
 qs('#btnQuickMode').onclick=()=>show('vaccine');
 qs('#btnLinkMember').onclick=()=>show('link');
 
@@ -99,3 +101,97 @@ qs('#btnReset').onclick=()=>{
 
 if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 if(state.account)show('home');else show('welcome');
+
+
+function startAssisted(){
+  assistedDraft={cartilla:null,name:'',date:'',dose:'',lot:'',institution:'',notes:''};
+  assistedStep=1;
+  qs('#assistDate').value='';
+  qs('#assistLot').value='';
+  renderAssistedStep();
+  show('assisted');
+}
+
+function renderAssistedStep(){
+  qsa('.wizard-step').forEach(x=>x.classList.remove('active'));
+  qs('#wizardStep'+assistedStep).classList.add('active');
+  qs('#wizardProgress').textContent=assistedStep+' de 6';
+  const titles=['Vamos paso a paso','Cartilla','Vacuna','Fecha','Dosis','Lote','Confirmar'];
+  qs('#wizardTitle').textContent=titles[assistedStep]||'Captura asistida';
+  if(assistedStep===6) renderAssistSummary();
+}
+
+function nextAssist(step){
+  assistedStep=step;
+  renderAssistedStep();
+}
+
+qsa('[data-cartilla]').forEach(b=>b.onclick=()=>{
+  assistedDraft.cartilla=b.dataset.cartilla;
+  nextAssist(2);
+});
+
+qsa('[data-vaccine]').forEach(b=>b.onclick=()=>{
+  assistedDraft.name=b.dataset.vaccine;
+  nextAssist(3);
+});
+
+qs('#assistDateNext').onclick=()=>{
+  const d=qs('#assistDate').value;
+  if(!d){toast('Elige una fecha o toca “No sé la fecha exacta”');return}
+  assistedDraft.date=d;
+  nextAssist(4);
+};
+qs('#assistDateUnknown').onclick=()=>{
+  assistedDraft.date='';
+  nextAssist(4);
+};
+
+qsa('[data-dose]').forEach(b=>b.onclick=()=>{
+  assistedDraft.dose=b.dataset.dose||'';
+  nextAssist(5);
+});
+
+qs('#assistLotNext').onclick=()=>{
+  assistedDraft.lot=qs('#assistLot').value.trim();
+  nextAssist(6);
+};
+qs('#assistNoLot').onclick=()=>{
+  assistedDraft.lot='';
+  nextAssist(6);
+};
+
+function renderAssistSummary(){
+  const m=state.members.find(x=>x.id===currentMemberId);
+  const rows=[
+    ['Paciente',m?.name||''],
+    ['Vacuna',assistedDraft.name||'No especificada'],
+    ['Fecha',assistedDraft.date||'No especificada'],
+    ['Dosis',assistedDraft.dose||'No especificada'],
+    ['Lote',assistedDraft.lot||'No registrado'],
+    ['Origen','Capturado por la familia']
+  ];
+  qs('#assistSummary').innerHTML=rows.map(r=>'<div class="summary-row"><span>'+escapeHtml(r[0])+'</span><strong>'+escapeHtml(r[1])+'</strong></div>').join('');
+}
+
+qs('#assistEdit').onclick=()=>nextAssist(2);
+
+qs('#assistSave').onclick=()=>{
+  const m=state.members.find(x=>x.id===currentMemberId);
+  if(!m)return;
+  m.vaccines=m.vaccines||[];
+  m.vaccines.push({
+    id:id(),
+    name:assistedDraft.name||'No especificada',
+    dose:assistedDraft.dose,
+    date:assistedDraft.date,
+    lot:assistedDraft.lot,
+    institution:'',
+    notes:assistedDraft.cartilla==='si'?'Capturado con cartilla a la mano':'Capturado de memoria',
+    status:'capturado_familia',
+    captureMode:'asistido'
+  });
+  save();
+  show('card');
+  toast('Antecedente guardado');
+};
