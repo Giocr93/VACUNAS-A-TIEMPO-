@@ -85,7 +85,7 @@ function unifiedRecordsFromInput(input,member){
   if(!all.length) return member.vaccines||[];
   const seen=new Set();
   return all.filter(v=>{
-    const key=[v.source==='profesional'?'P':'F',v.name,v.dose,v.date,v.lot].map(x=>String(x||'').trim().toLowerCase()).join('|');
+    const key=[v.name,v.dose,v.date,v.lot].map(x=>String(x||'').trim().toLowerCase()).join('|');
     if(seen.has(key))return false;
     seen.add(key);return true;
   });
