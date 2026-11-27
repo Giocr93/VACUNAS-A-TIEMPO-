@@ -15,7 +15,7 @@ OUT=Path('dist')
 seen=set()
 
 def fetch(u):
-    req=Request(u,headers={'User-Agent':'VAT-Netlify-Bootstrap/2.3.4.24'})
+    req=Request(u,headers={'User-Agent':'VAT-Netlify-Bootstrap/2.3.4.25'})
     with urlopen(req,timeout=30) as r:
         return r.read()
 
@@ -205,10 +205,56 @@ if 'scheduleLegacyPublish' in s:
 
 portal.write_text(s,'utf-8')
 
+# v2.3.4.25: normalizar filtros unit_id antes de que lleguen a PostgREST.
+# unit_id es UUID en Supabase; versiones previas añadían también el nombre humano
+# de la unidad al operador in.(...), provocando HTTP 400 y dejando sync en Error.
+idxp=OUT/'index.html'
+if idxp.exists():
+    html=idxp.read_text('utf-8',errors='ignore')
+    shim=r"""<script id="vat-unit-id-uuid-guard">
+(function(){
+  if(window.__VAT_UNIT_ID_UUID_GUARD__) return;
+  window.__VAT_UNIT_ID_UUID_GUARD__=true;
+  const nativeFetch=window.fetch;
+  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  window.fetch=function(input,init){
+    try{
+      const raw=(typeof input==='string')?input:(input&&input.url);
+      if(raw){
+        const u=new URL(raw,location.href);
+        if(u.pathname.endsWith('/rest/v1/sync_records')){
+          const v=u.searchParams.get('unit_id');
+          if(v && /^in\.\(/.test(v)){
+            const inner=v.slice(3,-1);
+            const good=inner.split(',').map(x=>decodeURIComponent(x).trim()).filter(x=>uuid.test(x));
+            if(good.length){
+              u.searchParams.set('unit_id','in.('+good.join(',')+')');
+              if(typeof input==='string') input=u.toString();
+              else input=new Request(u.toString(),input);
+            } else {
+              u.searchParams.delete('unit_id');
+              if(typeof input==='string') input=u.toString();
+              else input=new Request(u.toString(),input);
+            }
+          }
+        }
+      }
+    }catch(e){ console.warn('VAT unit_id guard',e); }
+    return nativeFetch.call(this,input,init);
+  };
+})();
+</script>"""
+    if 'vat-unit-id-uuid-guard' not in html:
+        if '<head>' in html:
+            html=html.replace('<head>','<head>'+shim,1)
+        else:
+            html=shim+html
+        idxp.write_text(html,'utf-8')
+
 # Cache/version
 if sw.exists():
     t=sw.read_text('utf-8',errors='ignore')
-    t=re.sub(r"const CACHE_NAME='[^']+';","const CACHE_NAME='vat-v2.3.4.24';",t,count=1)
+    t=re.sub(r"const CACHE_NAME='[^']+';","const CACHE_NAME='vat-v2.3.4.25';",t,count=1)
     sw.write_text(t,'utf-8')
 
 vp=OUT/'version.json'
