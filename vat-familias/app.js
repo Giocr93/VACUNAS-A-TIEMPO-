@@ -427,7 +427,10 @@ async function registerFamilyAccount(name,phone,email,password){
   const {data,error}=await sb.auth.signUp({
     email,
     password,
-    options:{data:{display_name:name}}
+    options:{
+      data:{display_name:name},
+      emailRedirectTo:new URL('./',location.href).href
+    }
   });
   if(error)throw error;
   if(data.session){
