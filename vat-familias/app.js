@@ -130,7 +130,11 @@ function years(d){
 }
 
 function renderHome(){
-  qs('#helloTitle').textContent='Hola'+(state.account?.name?', '+state.account.name.split(' ')[0]:'');
+  const familyLabel=String(state.account?.familyName||'').trim();
+  const fallbackName=String(state.account?.name||'').trim().split(' ')[0];
+  qs('#helloTitle').textContent=familyLabel
+    ? 'Hola, familia '+familyLabel+' 👋'
+    : (fallbackName?'Hola, '+fallbackName+' 👋':'Hola, familia 👋');
   const list=qs('#membersList');list.innerHTML='';
   qs('#emptyMembers').classList.toggle('hidden',state.members.length>0);
   state.members.forEach(m=>{
@@ -247,12 +251,13 @@ qs('#accountForm').onsubmit=async e=>{
   e.preventDefault();
   const name=qs('#accountName').value.trim();
   const phone=qs('#accountPhone').value.trim();
+  const familyName=qs('#accountFamilyName').value.trim();
   const email=qs('#accountEmail').value.trim();
   const password=qs('#accountPassword').value;
   try{
-    const r=await registerFamilyAccount(name,phone,email,password);
+    const r=await registerFamilyAccount(name,phone,familyName,email,password);
     if(r.confirmed){
-      state.account={name,phone,email};save();show('home');toast('Cuenta familiar creada');
+      state.account={name,phone,email,familyName};save();show('home');toast('Cuenta familiar creada');
     }else{
       toast('Revisa tu correo para confirmar la cuenta');
     }
@@ -737,7 +742,8 @@ async function syncAccountFromSupabase(){
   state.account={
     name:acct.display_name||session.user.email?.split('@')[0]||'Familia',
     phone:acct.phone||'',
-    email:session.user.email||''
+    email:session.user.email||'',
+    familyName:session.user.user_metadata?.family_name||state.account?.familyName||''
   };
   await loadMembersFromSupabase();
   backendReady=true;
@@ -746,21 +752,21 @@ async function syncAccountFromSupabase(){
   return true;
 }
 
-async function registerFamilyAccount(name,phone,email,password){
+async function registerFamilyAccount(name,phone,familyName,email,password){
   if(!sb)throw new Error('Supabase no disponible');
-  localStorage.setItem('vat_family_pending_profile',JSON.stringify({name,phone,email}));
+  localStorage.setItem('vat_family_pending_profile',JSON.stringify({name,phone,familyName,email}));
   const {data,error}=await sb.auth.signUp({
     email,
     password,
     options:{
-      data:{display_name:name},
+      data:{display_name:name,family_name:familyName||''},
       emailRedirectTo:new URL('index.html',location.href).href
     }
   });
   if(error)throw error;
   if(data.session){
     session=data.session;
-    const acct=await ensureFamilyAccount({name,phone,email});
+    const acct=await ensureFamilyAccount({name,phone,familyName,email});
     familyAccountId=acct.id;
     backendReady=true;
     return {confirmed:true};
@@ -775,7 +781,12 @@ async function signInFamily(email,password){
   session=data.session;
   const acct=await ensureFamilyAccount();
   familyAccountId=acct.id;
-  state.account={name:acct.display_name||email.split('@')[0],phone:acct.phone||'',email};
+  state.account={
+    name:acct.display_name||email.split('@')[0],
+    phone:acct.phone||'',
+    email,
+    familyName:session.user.user_metadata?.family_name||''
+  };
   await loadMembersFromSupabase();
   backendReady=true;
   await syncPendingLocalData();
