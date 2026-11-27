@@ -125,8 +125,17 @@ async function review(entryId,decision){
       p_notes:notes||null
     });
     if(error)throw error;
-    if(!data?.ok)throw new Error(data?.error||'No fue posible revisar');
-    toast('Revisión guardada');
+    if(!data?.ok){
+      if(data?.error==='application_date_required_for_verification'){
+        throw new Error('Para verificarla como aplicación de VAT necesitamos la fecha de aplicación. Marca “Requiere aclaración” si la familia no la indicó.');
+      }
+      throw new Error(data?.error||'No fue posible revisar');
+    }
+    if(decision==='verificado' && (data.vat_record_created || data.legacy_record_id)){
+      toast('Verificada y agregada al expediente de Vacunas a Tiempo');
+    }else{
+      toast('Revisión guardada');
+    }
     await loadQueue();
   }catch(err){
     toast(err.message||'No fue posible guardar la revisión');
