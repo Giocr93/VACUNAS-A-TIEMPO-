@@ -166,6 +166,98 @@
       </div>
     </section>
 
+    <section id="viewAssisted" class="view">
+      <div class="card">
+        <button class="back" data-back="captureMode" type="button">← Cambiar modo</button>
+
+        <div class="wizard-head">
+          <div>
+            <p class="eyebrow">CAPTURA ASISTIDA</p>
+            <h2 id="wizardTitle">Vamos paso a paso</h2>
+          </div>
+          <span id="wizardProgress" class="wizard-progress">1 de 6</span>
+        </div>
+
+        <div id="wizardStep1" class="wizard-step active">
+          <h3>¿Tienes la cartilla a la mano?</h3>
+          <p class="muted">No pasa nada si no la tienes. Puedes registrar lo que recuerdes.</p>
+          <div class="choice-grid">
+            <button class="choice-btn" data-cartilla="si" type="button">
+              <span class="choice-icon">📘</span>
+              <strong>Sí, tengo la cartilla</strong>
+              <small>Usaré lo que aparece escrito</small>
+            </button>
+            <button class="choice-btn" data-cartilla="no" type="button">
+              <span class="choice-icon">🧠</span>
+              <strong>No la tengo</strong>
+              <small>Registrar lo que recuerdo</small>
+            </button>
+          </div>
+        </div>
+
+        <div id="wizardStep2" class="wizard-step">
+          <h3>¿Qué vacuna quieres registrar?</h3>
+          <p class="muted">Elige la que aparece en la cartilla. Si no estás seguro, toca “No sé”.</p>
+          <div id="wizardVaccineChoices" class="choice-list">
+            <button type="button" data-vaccine="BCG">BCG</button>
+            <button type="button" data-vaccine="Hepatitis B">Hepatitis B</button>
+            <button type="button" data-vaccine="Hexavalente">Hexavalente</button>
+            <button type="button" data-vaccine="Rotavirus">Rotavirus</button>
+            <button type="button" data-vaccine="Neumococo">Neumococo</button>
+            <button type="button" data-vaccine="SRP">SRP</button>
+            <button type="button" data-vaccine="Influenza">Influenza</button>
+            <button type="button" data-vaccine="COVID-19">COVID-19</button>
+            <button type="button" data-vaccine="VPH">VPH</button>
+            <button type="button" data-vaccine="TD / Td">TD / Td</button>
+            <button type="button" data-vaccine="TDPA / Tdap">TDPA / Tdap</button>
+            <button type="button" data-vaccine="No sé">No sé / No estoy seguro</button>
+          </div>
+        </div>
+
+        <div id="wizardStep3" class="wizard-step">
+          <h3>¿Qué fecha tiene?</h3>
+          <p class="muted">Busca la fecha escrita junto a la vacuna.</p>
+          <label class="wizard-field">Fecha de aplicación
+            <input id="assistDate" type="date">
+          </label>
+          <button id="assistDateUnknown" class="secondary full" type="button">No sé la fecha exacta</button>
+          <button id="assistDateNext" class="primary full" type="button">Continuar</button>
+        </div>
+
+        <div id="wizardStep4" class="wizard-step">
+          <h3>¿Dice qué dosis fue?</h3>
+          <p class="muted">Puedes elegir una opción o indicar que no aparece.</p>
+          <div class="choice-list">
+            <button type="button" data-dose="1ª dosis">1ª dosis</button>
+            <button type="button" data-dose="2ª dosis">2ª dosis</button>
+            <button type="button" data-dose="3ª dosis">3ª dosis</button>
+            <button type="button" data-dose="Refuerzo">Refuerzo</button>
+            <button type="button" data-dose="Dosis única">Dosis única</button>
+            <button type="button" data-dose="">No sé / No aparece</button>
+          </div>
+        </div>
+
+        <div id="wizardStep5" class="wizard-step">
+          <h3>¿Ves un número de lote?</h3>
+          <p class="muted">Suele estar junto a la fecha o vacuna. Si no aparece, puedes continuar.</p>
+          <label class="wizard-field">Lote
+            <input id="assistLot" placeholder="Ej. AB1234">
+          </label>
+          <button id="assistNoLot" class="secondary full" type="button">No aparece / No sé</button>
+          <button id="assistLotNext" class="primary full" type="button">Continuar</button>
+        </div>
+
+        <div id="wizardStep6" class="wizard-step">
+          <h3>Revisa antes de guardar</h3>
+          <div id="assistSummary" class="summary-card"></div>
+          <div class="stack">
+            <button id="assistSave" class="primary" type="button">Sí, guardar</button>
+            <button id="assistEdit" class="secondary" type="button">Corregir</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="viewVaccine" class="view">
       <div class="card">
         <button class="back" data-back="card" type="button">← Cartilla</button>
