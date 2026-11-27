@@ -19,10 +19,22 @@ let qrScanTimer=null;
 function defaultState(){return {account:null,members:[]}}
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||defaultState()}catch{return defaultState()}}
 function save(){localStorage.setItem(KEY,JSON.stringify(state))}
-function id(){return crypto?.randomUUID?.()||('id-'+Date.now()+'-'+Math.random().toString(16).slice(2))}
+function id(){
+  if(crypto?.randomUUID)return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,ch=>{
+    const r=Math.random()*16|0,v=ch==='x'?r:(r&0x3|0x8);return v.toString(16)
+  });
+}
 function qs(x){return document.querySelector(x)}
 function qsa(x){return [...document.querySelectorAll(x)]}
 function toast(msg){const t=qs('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
+function isOfflineError(err){
+  const msg=String(err?.message||err||'').toLowerCase();
+  return !navigator.onLine || msg.includes('fetch') || msg.includes('network') || msg.includes('failed to fetch');
+}
+function pendingSyncCount(){
+  return state.members.reduce((n,m)=>n+(m.syncStatus==='pending'?1:0)+(m.vaccines||[]).filter(v=>v.syncStatus==='pending').length,0);
+}
 
 function show(name){
   qsa('.view').forEach(v=>v.classList.remove('active'));
@@ -168,12 +180,15 @@ qs('#memberForm').onsubmit=async e=>{
   e.preventDefault();
   const curp=qs('#memberCurp').value.trim().toUpperCase();
   if(curp && state.members.some(x=>x.curp===curp)){toast('Ya existe una cartilla con esa CURP');return}
-  let m={id:id(),name:qs('#memberName').value.trim(),dob:qs('#memberDob').value,sex:qs('#memberSex').value,curp,relationship:qs('#memberRelationship').value,vaccines:[]};
+  let m={id:id(),name:qs('#memberName').value.trim(),dob:qs('#memberDob').value,sex:qs('#memberSex').value,curp,relationship:qs('#memberRelationship').value,vaccines:[],syncStatus:'pending'};
   try{
-    if(backendReady)m=await saveMemberToSupabase(m);
-    state.members.push(m);currentMemberId=m.id;save();e.target.reset();show('card');
-    toast(backendReady?'Cartilla guardada en la nube':'Cartilla creada en modo local');
-  }catch(err){toast(err.message||'No se pudo guardar la cartilla')}
+    if(backendReady && navigator.onLine)m=await saveMemberToSupabase(m);
+  }catch(err){
+    if(!isOfflineError(err)){toast(err.message||'No se pudo guardar la cartilla');return}
+    m.syncStatus='pending';
+  }
+  state.members.push(m);currentMemberId=m.id;save();updateConnectionBadge();e.target.reset();show('card');
+  toast(m.syncStatus==='synced'?'Cartilla guardada en la nube':'Cartilla guardada; se sincronizará al volver la conexión');
 };
 
 qs('#btnAddVaccine').onclick=()=>show('captureMode');
@@ -196,20 +211,26 @@ qs('#vaccineForm').onsubmit=async e=>{
     source:'familia',
     captureMode:'rapido'
   };
+  v.syncStatus='pending';
+  let evidenceSaved=false;
+  const hadEvidence=!!quickEvidenceFile;
   try{
-    if(backendReady)v=await saveVaccineToSupabase(m,v);
-    let evidenceSaved=false;
-    if(backendReady && quickEvidenceFile){
-      try{await uploadVaccineEvidence(v.id,quickEvidenceFile);evidenceSaved=true}
-      catch(photoErr){console.warn(photoErr);toast('La vacuna se guardó, pero la foto no pudo subirse')}
-    }
-    m.vaccines=m.vaccines||[];
-    m.vaccines.push({...v,evidenceCount:evidenceSaved?1:0});
-    const hadEvidence=!!quickEvidenceFile;
-    save();e.target.reset();clearEvidenceInput('quick');show('card');
-    if(!hadEvidence)toast(backendReady?'Vacuna guardada en tu cuenta':'Vacuna guardada en modo local');
-    else if(evidenceSaved)toast('Vacuna y foto guardadas');
-  }catch(err){toast(err.message||'No se pudo guardar la vacuna')}
+    if(backendReady && navigator.onLine)v=await saveVaccineToSupabase(m,v);
+  }catch(err){
+    if(!isOfflineError(err)){toast(err.message||'No se pudo guardar la vacuna');return}
+    v.syncStatus='pending';
+  }
+  if(v.syncStatus==='synced' && quickEvidenceFile){
+    try{await uploadVaccineEvidence(v.id,quickEvidenceFile);evidenceSaved=true}
+    catch(photoErr){console.warn(photoErr);toast('La vacuna se guardó, pero la foto no pudo subirse')}
+  }
+  m.vaccines=m.vaccines||[];
+  m.vaccines.push({...v,evidenceCount:evidenceSaved?1:0,evidencePending:hadEvidence&&!evidenceSaved});
+  save();updateConnectionBadge();e.target.reset();clearEvidenceInput('quick');show('card');
+  if(v.syncStatus==='pending'){
+    toast(hadEvidence?'Vacuna guardada offline. La dosis se sincronizará; la foto deberá agregarse con conexión.':'Vacuna guardada offline; se sincronizará automáticamente.');
+  }else if(!hadEvidence)toast('Vacuna guardada en tu cuenta');
+  else if(evidenceSaved)toast('Vacuna y foto guardadas');
 };
 
 function parsePortalCredentials(raw){
@@ -441,20 +462,26 @@ qs('#assistSave').onclick=async()=>{
     source:'familia',
     captureMode:'asistido'
   };
+  v.syncStatus='pending';
+  let evidenceSaved=false;
+  const hadEvidence=!!assistEvidenceFile;
   try{
-    if(backendReady)v=await saveVaccineToSupabase(m,v);
-    let evidenceSaved=false;
-    const hadEvidence=!!assistEvidenceFile;
-    if(backendReady && assistEvidenceFile){
-      try{await uploadVaccineEvidence(v.id,assistEvidenceFile);evidenceSaved=true}
-      catch(photoErr){console.warn(photoErr);toast('El antecedente se guardó, pero la foto no pudo subirse')}
-    }
-    m.vaccines=m.vaccines||[];
-    m.vaccines.push({...v,evidenceCount:evidenceSaved?1:0});
-    save();clearEvidenceInput('assist');show('card');
-    if(!hadEvidence)toast(backendReady?'Antecedente guardado en tu cuenta':'Antecedente guardado localmente');
-    else if(evidenceSaved)toast('Antecedente y foto guardados');
-  }catch(err){toast(err.message||'No se pudo guardar el antecedente')}
+    if(backendReady && navigator.onLine)v=await saveVaccineToSupabase(m,v);
+  }catch(err){
+    if(!isOfflineError(err)){toast(err.message||'No se pudo guardar el antecedente');return}
+    v.syncStatus='pending';
+  }
+  if(v.syncStatus==='synced' && assistEvidenceFile){
+    try{await uploadVaccineEvidence(v.id,assistEvidenceFile);evidenceSaved=true}
+    catch(photoErr){console.warn(photoErr);toast('El antecedente se guardó, pero la foto no pudo subirse')}
+  }
+  m.vaccines=m.vaccines||[];
+  m.vaccines.push({...v,evidenceCount:evidenceSaved?1:0,evidencePending:hadEvidence&&!evidenceSaved});
+  save();updateConnectionBadge();clearEvidenceInput('assist');show('card');
+  if(v.syncStatus==='pending'){
+    toast(hadEvidence?'Antecedente guardado offline. Se sincronizará; la foto deberá agregarse con conexión.':'Antecedente guardado offline; se sincronizará automáticamente.');
+  }else if(!hadEvidence)toast('Antecedente guardado en tu cuenta');
+  else if(evidenceSaved)toast('Antecedente y foto guardados');
 };
 
 
@@ -481,6 +508,7 @@ async function ensureFamilyAccount(profile){
 
 async function loadMembersFromSupabase(){
   if(!sb || !familyAccountId)return;
+  const localMembers=[...(state.members||[])];
   const {data,error}=await sb.from('family_members')
     .select(`id,full_name,curp,birth_date,sex,relationship_to_account,link_status,linked_patient_id,
       family_vaccine_entries(
@@ -490,9 +518,9 @@ async function loadMembersFromSupabase(){
     .eq('family_account_id',familyAccountId)
     .order('created_at',{ascending:true});
   if(error)throw error;
-  state.members=(data||[]).map(x=>({
+  const remote=(data||[]).map(x=>({
     id:x.id,name:x.full_name,curp:x.curp||'',dob:x.birth_date||'',sex:x.sex||'',
-    relationship:x.relationship_to_account||'hijo',
+    relationship:x.relationship_to_account||'hijo',syncStatus:'synced',
     vaccines:(x.family_vaccine_entries||[]).map(v=>({
       id:v.id,
       name:v.vaccine_code,
@@ -506,11 +534,29 @@ async function loadMembersFromSupabase(){
       status:v.verification_status||'capturado_familia',
       linkedVaccinationId:v.linked_vaccination_id||null,
       verifiedAt:v.verified_at||null,
-      verificationNotes:v.verification_notes||''
+      verificationNotes:v.verification_notes||'',
+      syncStatus:'synced'
     })),
     linkStatus:x.link_status,
     linkedPatientId:x.linked_patient_id||null
   }));
+
+  const byId=new Map(remote.map(m=>[m.id,m]));
+  for(const local of localMembers){
+    const existing=byId.get(local.id);
+    if(existing){
+      existing.cardCache=local.cardCache||existing.cardCache;
+      existing.cardCacheAt=local.cardCacheAt||existing.cardCacheAt;
+      const remoteVax=new Map((existing.vaccines||[]).map(v=>[v.id,v]));
+      for(const lv of (local.vaccines||[])){
+        if(lv.syncStatus==='pending' && !remoteVax.has(lv.id))existing.vaccines.push(lv);
+      }
+    }else if(local.syncStatus==='pending'){
+      remote.push(local);
+      byId.set(local.id,local);
+    }
+  }
+  state.members=remote;
   save();
 }
 
@@ -528,6 +574,7 @@ async function syncAccountFromSupabase(){
   };
   await loadMembersFromSupabase();
   backendReady=true;
+  await syncPendingLocalData();
   save();
   return true;
 }
@@ -563,12 +610,15 @@ async function signInFamily(email,password){
   familyAccountId=acct.id;
   state.account={name:acct.display_name||email.split('@')[0],phone:acct.phone||'',email};
   await loadMembersFromSupabase();
-  backendReady=true;save();
+  backendReady=true;
+  await syncPendingLocalData();
+  save();
 }
 
 async function saveMemberToSupabase(m){
-  if(!backendReady || !sb || !familyAccountId)return m;
+  if(!backendReady || !sb || !familyAccountId)return {...m,syncStatus:'pending'};
   const payload={
+    id:m.id,
     family_account_id:familyAccountId,
     full_name:m.name,
     curp:m.curp||null,
@@ -577,16 +627,17 @@ async function saveMemberToSupabase(m){
     relationship_to_account:m.relationship||'hijo',
     guardian_name:state.account?.name||null
   };
-  const {data,error}=await sb.from('family_members').insert(payload).select('*').single();
+  const {data,error}=await sb.from('family_members').upsert(payload,{onConflict:'id'}).select('*').single();
   if(error)throw error;
   return {
-    ...m,id:data.id,linkStatus:data.link_status,linkedPatientId:data.linked_patient_id||null
+    ...m,id:data.id,linkStatus:data.link_status,linkedPatientId:data.linked_patient_id||null,syncStatus:'synced'
   };
 }
 
 async function saveVaccineToSupabase(member,v){
   if(!backendReady || !sb || !session?.user)return v;
   const payload={
+    id:v.id,
     family_member_id:member.id,
     vaccine_code:v.name||'No especificada',
     dose_code:v.dose||null,
@@ -600,7 +651,7 @@ async function saveVaccineToSupabase(member,v){
     created_by:session.user.id
   };
   const {data,error}=await sb.from('family_vaccine_entries')
-    .insert(payload)
+    .upsert(payload,{onConflict:'id'})
     .select('id,vaccine_code,dose_code,application_date,lot_number,manufacturer,institution_name,notes,source,verification_status,linked_vaccination_id,verified_at,verification_notes')
     .single();
   if(error)throw error;
@@ -618,8 +669,45 @@ async function saveVaccineToSupabase(member,v){
     status:data.verification_status||'capturado_familia',
     linkedVaccinationId:data.linked_vaccination_id||null,
     verifiedAt:data.verified_at||null,
-    verificationNotes:data.verification_notes||''
+    verificationNotes:data.verification_notes||'',
+    syncStatus:'synced'
   };
+}
+
+async function syncPendingLocalData(){
+  if(!backendReady || !sb || !session?.user || !familyAccountId || !navigator.onLine)return;
+  let changed=false;
+  for(let i=0;i<state.members.length;i++){
+    let member=state.members[i];
+    if(member.syncStatus==='pending'){
+      try{
+        member=await saveMemberToSupabase(member);
+        state.members[i]=member;changed=true;
+      }catch(err){
+        if(isOfflineError(err))break;
+        console.warn('No se pudo sincronizar integrante',err);
+        continue;
+      }
+    }
+    member.vaccines=member.vaccines||[];
+    for(let j=0;j<member.vaccines.length;j++){
+      const vaccine=member.vaccines[j];
+      if(vaccine.syncStatus!=='pending')continue;
+      try{
+        member.vaccines[j]=await saveVaccineToSupabase(member,vaccine);
+        changed=true;
+      }catch(err){
+        if(isOfflineError(err))break;
+        console.warn('No se pudo sincronizar vacuna',err);
+      }
+    }
+  }
+  if(changed){
+    save();
+    updateConnectionBadge();
+    const current=state.members.find(x=>x.id===currentMemberId);
+    if(current && document.querySelector('#viewCard.active'))refreshUnifiedCard(current);
+  }
 }
 
 async function linkCurrentMemberReal(folio,token){
@@ -660,11 +748,13 @@ qs('#btnLogout').onclick=()=>logoutFamily();
 function updateConnectionBadge(){
   const badge=qs('#connectionBadge');if(!badge)return;
   const online=navigator.onLine;
-  badge.textContent=online?'En línea':'Sin conexión';
-  badge.classList.toggle('offline',!online);
+  const pending=pendingSyncCount();
+  badge.textContent=!online?'Sin conexión':pending?pending+' pendiente'+(pending===1?'':'s'):'En línea';
+  badge.classList.toggle('offline',!online||pending>0);
 }
-window.addEventListener('online',()=>{
+window.addEventListener('online',async()=>{
   updateConnectionBadge();
+  await syncPendingLocalData();
   const m=state.members.find(x=>x.id===currentMemberId);
   if(m && document.querySelector('#viewCard.active'))refreshUnifiedCard(m);
 });
