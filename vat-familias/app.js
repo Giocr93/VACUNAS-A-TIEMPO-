@@ -91,7 +91,79 @@ qs('#vaccineForm').onsubmit=e=>{
   save();e.target.reset();show('card');toast('Vacuna guardada como antecedente familiar');
 };
 
-qs('#btnMockLink').onclick=()=>toast('El lector QR real se conecta en la siguiente fase');
+function parsePortalCredentials(raw){
+  const out={folio:'',token:''};
+  const s=String(raw||'').trim();
+  if(!s)return out;
+
+  try{
+    const u=new URL(s,location.href);
+    const qp=u.searchParams;
+    out.folio=qp.get('folio')||qp.get('f')||qp.get('patient')||qp.get('code')||'';
+    out.token=qp.get('token')||qp.get('t')||qp.get('access_token')||qp.get('accessCode')||qp.get('access_code')||'';
+    if(out.folio||out.token)return out;
+  }catch{}
+
+  const pairs={};
+  s.split(/[\n&;|]/).forEach(part=>{
+    const m=part.match(/^\s*([^:=]+)\s*[:=]\s*(.+?)\s*$/);
+    if(m)pairs[m[1].toLowerCase().trim()]=m[2].trim();
+  });
+  out.folio=pairs.folio||pairs.f||pairs.codigo_paciente||pairs.patient||'';
+  out.token=pairs.token||pairs.t||pairs.codigo||pairs.access_code||pairs.accesscode||'';
+
+  if(!out.folio||!out.token){
+    const bits=s.split(/\s+/).filter(Boolean);
+    if(bits.length===2){
+      out.folio=out.folio||bits[0];
+      out.token=out.token||bits[1];
+    }
+  }
+  return out;
+}
+
+function showLinkPreview(folio,token){
+  const box=qs('#linkPreview');
+  if(!folio && !token){box.classList.add('hidden');box.innerHTML='';return}
+  box.classList.remove('hidden');
+  box.innerHTML=
+    '<div class="summary-row"><span>Folio</span><strong>'+escapeHtml(folio||'No detectado')+'</strong></div>'+
+    '<div class="summary-row"><span>Código</span><strong>'+(token?'••••••••':'No detectado')+'</strong></div>'+
+    '<div class="summary-row"><span>Acción</span><strong>Vincular sin duplicar</strong></div>';
+}
+
+qs('#btnParseQr').onclick=()=>{
+  const x=parsePortalCredentials(qs('#linkQrText').value);
+  if(x.folio)qs('#linkFolio').value=x.folio;
+  if(x.token)qs('#linkToken').value=x.token;
+  if(!x.folio && !x.token){toast('No pude identificar folio y código en ese QR');return}
+  showLinkPreview(qs('#linkFolio').value.trim(),qs('#linkToken').value.trim());
+  toast('Datos del QR detectados');
+};
+
+qs('#linkFolio').addEventListener('input',()=>showLinkPreview(qs('#linkFolio').value.trim(),qs('#linkToken').value.trim()));
+qs('#linkToken').addEventListener('input',()=>showLinkPreview(qs('#linkFolio').value.trim(),qs('#linkToken').value.trim()));
+
+qs('#btnMockLink').onclick=()=>{
+  const folio=qs('#linkFolio').value.trim();
+  const token=qs('#linkToken').value.trim();
+  if(!folio || !token){toast('Necesito folio y código de acceso');return}
+  const m=state.members.find(x=>x.id===currentMemberId);
+  if(!m){
+    toast('Primero selecciona o agrega al integrante que quieres vincular');
+    show('home');
+    return;
+  }
+  m.link={
+    status:'pendiente_conexion',
+    folio,
+    tokenHint:token.slice(-4),
+    capturedAt:new Date().toISOString()
+  };
+  save();
+  show('card');
+  toast('Vínculo preparado. Se validará al conectar Supabase');
+};
 
 qs('#btnReset').onclick=()=>{
   if(confirm('¿Borrar solo los datos de prueba de VAT Familias en este dispositivo?')){
