@@ -1,3 +1,11 @@
+const SUPABASE_URL='https://kvnvgevogxivkwoswbqh.supabase.co';
+const SUPABASE_KEY='sb_publishable_psg1CQIq1Y9tDJmd2qsfUA_DSY5COw2';
+const sb=window.supabase?.createClient(SUPABASE_URL,SUPABASE_KEY,{
+  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+});
+let session=null;
+let familyAccountId=null;
+let backendReady=false;
 const KEY='vat_familias_mvp_demo_v1';
 let state=load();
 let currentMemberId=null;
@@ -64,18 +72,42 @@ qs('#btnAddMemberTop').onclick=qs('#btnAddMemberEmpty').onclick=()=>show('member
 qs('#btnLinkFromHome').onclick=()=>show('link');
 qsa('.back').forEach(b=>b.onclick=()=>show(b.dataset.back));
 
-qs('#accountForm').onsubmit=e=>{
+qs('#accountForm').onsubmit=async e=>{
   e.preventDefault();
-  state.account={name:qs('#accountName').value.trim(),phone:qs('#accountPhone').value.trim(),email:qs('#accountEmail').value.trim()};
-  save();show('home');toast('Cuenta familiar creada');
+  const name=qs('#accountName').value.trim();
+  const phone=qs('#accountPhone').value.trim();
+  const email=qs('#accountEmail').value.trim();
+  const password=qs('#accountPassword').value;
+  try{
+    const r=await registerFamilyAccount(name,phone,email,password);
+    if(r.confirmed){
+      state.account={name,phone,email};save();show('home');toast('Cuenta familiar creada');
+    }else{
+      toast('Revisa tu correo para confirmar la cuenta');
+    }
+  }catch(err){toast(err.message||'No fue posible crear la cuenta')}
 };
 
-qs('#memberForm').onsubmit=e=>{
+qs('#btnExistingAccount').onclick=async()=>{
+  const email=qs('#accountEmail').value.trim();
+  const password=qs('#accountPassword').value;
+  if(!email||!password){toast('Escribe correo y contraseña');return}
+  try{
+    await signInFamily(email,password);
+    show('home');toast('Sesión iniciada');
+  }catch(err){toast(err.message||'No fue posible iniciar sesión')}
+};
+
+qs('#memberForm').onsubmit=async e=>{
   e.preventDefault();
   const curp=qs('#memberCurp').value.trim().toUpperCase();
   if(curp && state.members.some(x=>x.curp===curp)){toast('Ya existe una cartilla con esa CURP');return}
-  const m={id:id(),name:qs('#memberName').value.trim(),dob:qs('#memberDob').value,sex:qs('#memberSex').value,curp,relationship:qs('#memberRelationship').value,vaccines:[]};
-  state.members.push(m);currentMemberId=m.id;save();e.target.reset();show('card');toast('Cartilla creada');
+  let m={id:id(),name:qs('#memberName').value.trim(),dob:qs('#memberDob').value,sex:qs('#memberSex').value,curp,relationship:qs('#memberRelationship').value,vaccines:[]};
+  try{
+    if(backendReady)m=await saveMemberToSupabase(m);
+    state.members.push(m);currentMemberId=m.id;save();e.target.reset();show('card');
+    toast(backendReady?'Cartilla guardada en la nube':'Cartilla creada en modo local');
+  }catch(err){toast(err.message||'No se pudo guardar la cartilla')}
 };
 
 qs('#btnAddVaccine').onclick=()=>show('captureMode');
@@ -144,26 +176,23 @@ qs('#btnParseQr').onclick=()=>{
 qs('#linkFolio').addEventListener('input',()=>showLinkPreview(qs('#linkFolio').value.trim(),qs('#linkToken').value.trim()));
 qs('#linkToken').addEventListener('input',()=>showLinkPreview(qs('#linkFolio').value.trim(),qs('#linkToken').value.trim()));
 
-qs('#btnMockLink').onclick=()=>{
+qs('#btnMockLink').onclick=async()=>{
   const folio=qs('#linkFolio').value.trim();
   const token=qs('#linkToken').value.trim();
   if(!folio || !token){toast('Necesito folio y código de acceso');return}
   const m=state.members.find(x=>x.id===currentMemberId);
-  if(!m){
-    toast('Primero selecciona o agrega al integrante que quieres vincular');
-    show('home');
-    return;
-  }
-  m.link={
-    status:'pendiente_conexion',
-    folio,
-    tokenHint:token.slice(-4),
-    capturedAt:new Date().toISOString()
-  };
-  save();
-  show('card');
-  toast('Vínculo preparado. Se validará al conectar Supabase');
+  if(!m){toast('Primero selecciona al integrante');show('home');return}
+  try{
+    if(backendReady){
+      await linkCurrentMemberReal(folio,token);
+      show('card');toast('Cartilla vinculada con Vacunas a Tiempo');
+    }else{
+      m.link={status:'pendiente_conexion',folio,tokenHint:token.slice(-4),capturedAt:new Date().toISOString()};
+      save();show('card');toast('Vínculo guardado localmente');
+    }
+  }catch(err){toast(err.message||'No fue posible vincular')}
 };
+
 
 qs('#btnReset').onclick=()=>{
   if(confirm('¿Borrar solo los datos de prueba de VAT Familias en este dispositivo?')){
@@ -267,3 +296,142 @@ qs('#assistSave').onclick=()=>{
   show('card');
   toast('Antecedente guardado');
 };
+
+
+async function ensureFamilyAccount(profile){
+  if(!sb || !session?.user)return null;
+  const uid=session.user.id;
+  const {data:existing,error:readErr}=await sb.from('family_accounts').select('*').eq('user_id',uid).maybeSingle();
+  if(readErr)throw readErr;
+  if(existing){familyAccountId=existing.id;return existing}
+
+  const pending=profile||JSON.parse(localStorage.getItem('vat_family_pending_profile')||'null')||{};
+  const payload={
+    user_id:uid,
+    display_name:pending.name||session.user.user_metadata?.display_name||session.user.email?.split('@')[0]||'Familia',
+    phone:pending.phone||null,
+    terms_accepted_at:new Date().toISOString()
+  };
+  const {data,error}=await sb.from('family_accounts').insert(payload).select('*').single();
+  if(error)throw error;
+  localStorage.removeItem('vat_family_pending_profile');
+  familyAccountId=data.id;
+  return data;
+}
+
+async function loadMembersFromSupabase(){
+  if(!sb || !familyAccountId)return;
+  const {data,error}=await sb.from('family_members')
+    .select('id,full_name,curp,birth_date,sex,relationship_to_account,link_status,linked_patient_id')
+    .eq('family_account_id',familyAccountId)
+    .order('created_at',{ascending:true});
+  if(error)throw error;
+  state.members=(data||[]).map(x=>({
+    id:x.id,name:x.full_name,curp:x.curp||'',dob:x.birth_date||'',sex:x.sex||'',
+    relationship:x.relationship_to_account||'hijo',vaccines:[],linkStatus:x.link_status,
+    linkedPatientId:x.linked_patient_id||null
+  }));
+  save();
+}
+
+async function syncAccountFromSupabase(){
+  if(!sb)return false;
+  const {data:{session:s}}=await sb.auth.getSession();
+  session=s||null;
+  if(!session)return false;
+
+  const acct=await ensureFamilyAccount();
+  state.account={
+    name:acct.display_name||session.user.email?.split('@')[0]||'Familia',
+    phone:acct.phone||'',
+    email:session.user.email||''
+  };
+  await loadMembersFromSupabase();
+  backendReady=true;
+  save();
+  return true;
+}
+
+async function registerFamilyAccount(name,phone,email,password){
+  if(!sb)throw new Error('Supabase no disponible');
+  localStorage.setItem('vat_family_pending_profile',JSON.stringify({name,phone,email}));
+  const {data,error}=await sb.auth.signUp({
+    email,
+    password,
+    options:{data:{display_name:name}}
+  });
+  if(error)throw error;
+  if(data.session){
+    session=data.session;
+    const acct=await ensureFamilyAccount({name,phone,email});
+    familyAccountId=acct.id;
+    backendReady=true;
+    return {confirmed:true};
+  }
+  return {confirmed:false};
+}
+
+async function signInFamily(email,password){
+  if(!sb)throw new Error('Supabase no disponible');
+  const {data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error)throw error;
+  session=data.session;
+  const acct=await ensureFamilyAccount();
+  familyAccountId=acct.id;
+  state.account={name:acct.display_name||email.split('@')[0],phone:acct.phone||'',email};
+  await loadMembersFromSupabase();
+  backendReady=true;save();
+}
+
+async function saveMemberToSupabase(m){
+  if(!backendReady || !sb || !familyAccountId)return m;
+  const payload={
+    family_account_id:familyAccountId,
+    full_name:m.name,
+    curp:m.curp||null,
+    birth_date:m.dob||null,
+    sex:m.sex||null,
+    relationship_to_account:m.relationship||'hijo',
+    guardian_name:state.account?.name||null
+  };
+  const {data,error}=await sb.from('family_members').insert(payload).select('*').single();
+  if(error)throw error;
+  return {
+    ...m,id:data.id,linkStatus:data.link_status,linkedPatientId:data.linked_patient_id||null
+  };
+}
+
+async function linkCurrentMemberReal(folio,token){
+  if(!backendReady || !sb || !session)throw new Error('Inicia sesión para vincular');
+  const m=state.members.find(x=>x.id===currentMemberId);
+  if(!m)throw new Error('Selecciona primero a un integrante');
+  const {data,error}=await sb.rpc('family_app_link_from_portal',{
+    p_family_member_id:m.id,
+    p_folio:folio,
+    p_token:token
+  });
+  if(error)throw error;
+  if(!data?.ok)throw new Error(data?.error||'No fue posible vincular');
+  m.linkStatus='vinculado';
+  m.link={status:'vinculado',folio,patientRecordId:data.patient_record_id,unitId:data.unit_id};
+  save();
+  return data;
+}
+
+async function logoutFamily(){
+  if(sb)await sb.auth.signOut();
+  session=null;familyAccountId=null;backendReady=false;
+  state=defaultState();currentMemberId=null;save();show('welcome');
+}
+
+(async function bootBackend(){
+  try{
+    const ok=await syncAccountFromSupabase();
+    if(ok)show('home');
+  }catch(e){
+    console.warn('VAT Familias backend',e);
+    toast('No se pudo conectar con la nube; seguimos en modo local');
+  }
+})();
+
+qs('#btnLogout').onclick=()=>logoutFamily();
