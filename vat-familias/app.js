@@ -65,6 +65,7 @@ function renderCard(){
     el.innerHTML=`<div class="vaccine-row-top"><strong>${escapeHtml(v.name)}</strong><span class="status ${sm.cls}">${escapeHtml(sm.label)}</span></div><small>${escapeHtml(v.dose||'Dosis no especificada')} · ${escapeHtml(v.date||'Fecha no especificada')}</small><small>${v.lot?'Lote '+escapeHtml(v.lot)+' · ':''}${escapeHtml(v.institution||'')}</small>`;
     vl.appendChild(el);
   });
+  renderMemberSchedule(m);
 }
 
 function vaccineStatusMeta(v){
@@ -616,4 +617,130 @@ function clearEvidenceInput(kind){
   if(input)input.value='';
   if(preview){preview.classList.add('hidden');preview.removeAttribute('src')}
   if(kind==='quick')quickEvidenceFile=null;else assistEvidenceFile=null;
+}
+
+
+function scheduleDateLabel(v){
+  if(!v)return 'Fecha por definir';
+  try{return new Date(v+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'})}catch{return v}
+}
+
+async function getScheduleInput(member){
+  if(backendReady && sb && session?.user){
+    const {data,error}=await sb.rpc('family_member_schedule_input',{p_family_member_id:member.id});
+    if(error)throw error;
+    if(!data?.ok)throw new Error(data?.error||'No se pudo calcular el esquema');
+    return data;
+  }
+
+  const all=(member.vaccines||[]).map(v=>({
+    vaccine:v.name,dose:v.dose,date:v.date,lot:v.lot,source:v.source||'familia',
+    verification_status:v.status||'capturado_familia'
+  }));
+  return {
+    ok:true,
+    member:{id:member.id,name:member.name,birth_date:member.dob,link_status:member.linkStatus||'independiente'},
+    professional_vaccinations:all.filter(v=>v.source==='profesional'),
+    verified_family_vaccinations:all.filter(v=>v.verification_status==='verificado'),
+    unverified_family_vaccinations:all.filter(v=>v.source!=='profesional'&&v.verification_status!=='verificado')
+  };
+}
+
+async function renderMemberSchedule(member){
+  const panel=qs('#schedulePanel');if(!panel)return;
+  const memberId=member.id;
+  panel.innerHTML='<div class="schedule-loading">Calculando próximas vacunas…</div>';
+  try{
+    const engine=window.VATClinicalEngine;
+    if(!engine)throw new Error('Motor clínico no disponible');
+    const input=await getScheduleInput(member);
+    if(currentMemberId!==memberId)return;
+    const birth=input.member?.birth_date||member.dob;
+    if(!birth){
+      panel.innerHTML='<div class="schedule-alert">Agrega la fecha de nacimiento para calcular las próximas vacunas.</div>';
+      return;
+    }
+
+    const professional=input.professional_vaccinations||[];
+    const verified=input.verified_family_vaccinations||[];
+    const unverified=input.unverified_family_vaccinations||[];
+    const trusted=[...professional,...verified];
+    const reported=[...trusted,...unverified.filter(v=>v.date)];
+    const trustedEval=engine.evaluate({birth,vaccinations:trusted});
+    const reportedEval=engine.evaluate({birth,vaccinations:reported});
+    const independent=trusted.length===0;
+    const e=independent?reportedEval:trustedEval;
+    const preliminary=unverified.length>0;
+    const next=e.nextDose;
+    const due=e.items.filter(x=>['due','special','out_of_time'].includes(x.status)).slice(0,4);
+
+    let note='';
+    if(independent && preliminary){
+      note='<div class="schedule-alert"><b>Orientación preliminar:</b> este cálculo usa antecedentes capturados por la familia que aún no han sido verificados.</div>';
+    }else if(preliminary){
+      note='<div class="schedule-alert">Hay '+unverified.length+' antecedente(s) familiar(es) por confirmar. Algunos pendientes podrían cambiar cuando sean verificados.</div>';
+    }else{
+      note='<div class="schedule-ok">Cálculo basado en registros profesionales y/o antecedentes familiares verificados.</div>';
+    }
+
+    const nextDate=next?.minimumDate||next?.targetDate||'';
+    const reminderButton=next?'<button class="secondary" type="button" id="btnSaveReminder">🔔 Guardar recordatorio</button>':'';
+    panel.innerHTML=`
+      <div class="schedule-overview">
+        <div class="schedule-top">
+          <div>
+            <p class="eyebrow">PRÓXIMAS VACUNAS</p>
+            <h3>${escapeHtml(e.level)}</h3>
+            <p class="muted">Motor de Vacunación 2026 · ${escapeHtml(e.age?.label||'')}</p>
+          </div>
+          <div class="schedule-score"><b>${e.progressPercent}%</b><small>avance evaluable</small></div>
+        </div>
+        ${next?`<div class="schedule-next">
+          <span class="muted">Siguiente orientación</span>
+          <strong>${escapeHtml(next.vaccine)} · ${escapeHtml(next.dose)}</strong>
+          <div class="date">${next.status==='due'?'Pendiente ahora':next.status==='out_of_time'?'Requiere valoración':scheduleDateLabel(nextDate)}</div>
+          <div class="muted">${escapeHtml(next.action||'')}</div>
+          <div class="schedule-actions">${reminderButton}</div>
+        </div>`:'<div class="schedule-ok">No se detectó una próxima dosis dentro de las reglas evaluadas.</div>'}
+        ${note}
+        ${due.length?`<div class="schedule-due">${due.map(x=>`<div class="schedule-dose"><div><b>${escapeHtml(x.vaccine)} · ${escapeHtml(x.dose)}</b><br><small>${escapeHtml(x.label)}</small></div><small>${x.targetDate?scheduleDateLabel(x.targetDate):''}</small></div>`).join('')}</div>`:''}
+      </div>
+    `;
+
+    const btn=qs('#btnSaveReminder');
+    if(btn&&next)btn.onclick=()=>saveEngineReminder(member,next,btn);
+  }catch(err){
+    console.warn('VAT schedule',err);
+    if(currentMemberId===memberId)panel.innerHTML='<div class="schedule-alert">No pudimos calcular las próximas vacunas en este momento.</div>';
+  }
+}
+
+async function saveEngineReminder(member,item,button){
+  if(!backendReady || !session?.user){
+    const reminders=JSON.parse(localStorage.getItem('vat_family_reminders')||'[]');
+    reminders.push({memberId:member.id,ruleId:item.id,vaccine:item.vaccine,dose:item.dose,targetDate:item.minimumDate||item.targetDate||'',createdAt:new Date().toISOString()});
+    localStorage.setItem('vat_family_reminders',JSON.stringify(reminders));
+    button.textContent='✓ Recordatorio guardado';button.classList.add('reminder-saved');button.disabled=true;
+    toast('Recordatorio guardado en este dispositivo');
+    return;
+  }
+  const target=item.minimumDate||item.targetDate||null;
+  const payload={
+    family_member_id:member.id,
+    engine_rule_id:item.id,
+    vaccine_code:item.vaccine,
+    dose_code:item.dose||null,
+    target_date:target,
+    remind_days_before:7,
+    status:'activo',
+    created_by:session.user.id,
+    updated_at:new Date().toISOString()
+  };
+  const {error}=await sb.from('family_reminders').upsert(payload,{
+    onConflict:'family_member_id,engine_rule_id,target_date',
+    ignoreDuplicates:false
+  });
+  if(error)throw error;
+  button.textContent='✓ Recordatorio guardado';button.classList.add('reminder-saved');button.disabled=true;
+  toast('Recordatorio guardado en VAT Familias');
 }
