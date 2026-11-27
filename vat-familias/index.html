@@ -155,6 +155,11 @@
           <button id="btnLinkMember" class="secondary" type="button">Vincular con VAT</button>
         </div>
 
+        <section id="schedulePanel" class="schedule-panel">
+          <div class="schedule-loading">Calculando próximas vacunas…</div>
+        </section>
+
+        <div class="section-title"><h3>Vacunas registradas</h3></div>
         <div id="vaccineList" class="vaccine-list"></div>
         <div id="emptyVaccines" class="empty-inline">
           <p>No hay vacunas capturadas todavía.</p>
@@ -362,6 +367,7 @@
 
   <div id="toast" class="toast" role="status"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../shared/vat-clinical-engine.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>
