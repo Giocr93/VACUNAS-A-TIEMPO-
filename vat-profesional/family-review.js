@@ -67,7 +67,7 @@ function render(){
         <div><span>Registro profesional</span><strong>${x.patient_record_id?'Vinculado':'No vinculado'}</strong></div>
         <div><span>Observación familiar</span><strong>${esc(x.notes||'Sin notas')}</strong></div>
       </div>
-      ${(x.evidence||[]).length?'<div class="evidence-gallery" data-gallery="'+esc(x.entry_id)+'"></div>':''}
+      ${(x.evidence||[]).length?'<div class="evidence-actions"><button class="evidence-load" type="button" data-evidence-id="'+esc(x.entry_id)+'">📷 Ver evidencia ('+(x.evidence||[]).length+')</button></div><div class="evidence-gallery hidden" data-gallery="'+esc(x.entry_id)+'"></div>':''}
       <div class="notes">
         <textarea data-notes="${esc(x.entry_id)}" placeholder="Observaciones de la revisión (opcional)"></textarea>
       </div>
@@ -80,29 +80,42 @@ function render(){
     q.appendChild(card);
   });
   qsa('[data-action]').forEach(b=>b.onclick=()=>review(b.dataset.id,b.dataset.action));
-  loadEvidenceImages();
+  qsa('[data-evidence-id]').forEach(b=>b.onclick=()=>loadEvidenceImages(b.dataset.evidenceId,b));
 }
 
-async function loadEvidenceImages(){
-  for(const x of items){
-    const gallery=qs('[data-gallery="'+CSS.escape(x.entry_id)+'"]');
-    if(!gallery)continue;
-    for(const ev of (x.evidence||[])){
-      const wrap=document.createElement('button');
-      wrap.className='evidence-thumb';wrap.type='button';wrap.textContent='Cargando foto…';
-      gallery.appendChild(wrap);
-      try{
-        const {data,error}=await sb.storage.from(ev.bucket||'family-evidence').download(ev.path);
-        if(error)throw error;
-        const url=URL.createObjectURL(data);
-        wrap.innerHTML='<img src="'+url+'" alt="Evidencia de cartilla"><span>Ver foto</span>';
-        wrap.onclick=()=>openEvidence(url);
-      }catch(err){
-        wrap.textContent='No se pudo cargar la foto';
-        wrap.disabled=true;
-      }
+async function loadEvidenceImages(entryId,trigger){
+  const x=items.find(item=>item.entry_id===entryId);
+  const gallery=qs('[data-gallery="'+CSS.escape(entryId)+'"]');
+  if(!x||!gallery)return;
+  if(gallery.dataset.loaded==='1'){
+    gallery.classList.toggle('hidden');
+    trigger.textContent=gallery.classList.contains('hidden')?'📷 Ver evidencia ('+(x.evidence||[]).length+')':'Ocultar evidencia';
+    return;
+  }
+
+  trigger.disabled=true;
+  trigger.textContent='Cargando evidencia…';
+  gallery.classList.remove('hidden');
+
+  for(const ev of (x.evidence||[])){
+    const wrap=document.createElement('button');
+    wrap.className='evidence-thumb';wrap.type='button';wrap.textContent='Cargando foto…';
+    gallery.appendChild(wrap);
+    try{
+      const {data,error}=await sb.storage.from(ev.bucket||'family-evidence').download(ev.path);
+      if(error)throw error;
+      const url=URL.createObjectURL(data);
+      wrap.innerHTML='<img src="'+url+'" alt="Evidencia de cartilla"><span>Ver foto</span>';
+      wrap.onclick=()=>openEvidence(url);
+    }catch(err){
+      wrap.textContent='No se pudo cargar la foto';
+      wrap.disabled=true;
     }
   }
+
+  gallery.dataset.loaded='1';
+  trigger.disabled=false;
+  trigger.textContent='Ocultar evidencia';
 }
 
 function openEvidence(url){
@@ -128,6 +141,12 @@ async function review(entryId,decision){
     if(!data?.ok){
       if(data?.error==='application_date_required_for_verification'){
         throw new Error('Para verificarla como aplicación de VAT necesitamos la fecha de aplicación. Marca “Requiere aclaración” si la familia no la indicó.');
+      }
+      if(data?.error==='linked_patient_missing'){
+        throw new Error('La cartilla está vinculada, pero falta enlazarla al paciente profesional antes de verificar.');
+      }
+      if(data?.error==='verified_record_requires_vat_edit'){
+        throw new Error('Este antecedente ya creó una aplicación en VAT. Cualquier cambio debe hacerse desde el expediente profesional.');
       }
       throw new Error(data?.error||'No fue posible revisar');
     }
