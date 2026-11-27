@@ -378,42 +378,71 @@ function stopQrScanner(){
   qs('#qrScanner')?.classList.add('hidden');
 }
 
+function applyQrRaw(raw){
+  const parsed=parsePortalCredentials(raw);
+  qs('#linkQrText').value=raw;
+  if(parsed.folio)qs('#linkFolio').value=parsed.folio;
+  if(parsed.token)qs('#linkToken').value=parsed.token;
+  showLinkPreview(qs('#linkFolio').value.trim(),qs('#linkToken').value.trim());
+  stopQrScanner();
+  toast(parsed.folio||parsed.token?'QR leído correctamente':'QR leído; revisa los datos detectados');
+}
+
 async function startQrScanner(){
   if(!navigator.mediaDevices?.getUserMedia){
     toast('Este navegador no permite usar la cámara. Usa el folio o pega el QR.');
     return;
   }
-  if(!('BarcodeDetector' in window)){
-    toast('El lector directo no está disponible aquí. Usa el folio o pega el contenido del QR.');
+
+  let detector=null;
+  if('BarcodeDetector' in window){
+    try{
+      const supported=await BarcodeDetector.getSupportedFormats?.();
+      if(!Array.isArray(supported) || supported.includes('qr_code')){
+        detector=new BarcodeDetector({formats:['qr_code']});
+      }
+    }catch(err){console.warn('BarcodeDetector no disponible',err)}
+  }
+
+  if(!detector && typeof window.jsQR!=='function'){
+    toast('No fue posible cargar el lector QR. Usa el folio o pega el contenido del QR.');
     return;
   }
+
   try{
-    const supported=await BarcodeDetector.getSupportedFormats?.();
-    if(Array.isArray(supported) && !supported.includes('qr_code')) throw new Error('QR no compatible');
-    const detector=new BarcodeDetector({formats:['qr_code']});
-    activeQrStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    activeQrStream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},
+      audio:false
+    });
     const video=qs('#qrVideo');
     qs('#qrScanner').classList.remove('hidden');
     video.srcObject=activeQrStream;
     await video.play();
-    qs('#qrScanStatus').textContent='Apunta la cámara al código QR.';
+    qs('#qrScanStatus').textContent=detector?'Apunta la cámara al código QR.':'Apunta la cámara al QR. Lector compatible activado.';
+
+    const canvas=document.createElement('canvas');
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+
     const scan=async()=>{
       if(!activeQrStream)return;
       try{
-        const codes=await detector.detect(video);
-        const raw=codes?.[0]?.rawValue||'';
-        if(raw){
-          const parsed=parsePortalCredentials(raw);
-          qs('#linkQrText').value=raw;
-          if(parsed.folio)qs('#linkFolio').value=parsed.folio;
-          if(parsed.token)qs('#linkToken').value=parsed.token;
-          showLinkPreview(qs('#linkFolio').value.trim(),qs('#linkToken').value.trim());
-          stopQrScanner();
-          toast(parsed.folio||parsed.token?'QR leído correctamente':'QR leído; revisa los datos detectados');
-          return;
+        let raw='';
+        if(detector){
+          const codes=await detector.detect(video);
+          raw=codes?.[0]?.rawValue||'';
+        }else if(video.readyState>=2 && video.videoWidth && video.videoHeight){
+          const maxWidth=720;
+          const scale=Math.min(1,maxWidth/video.videoWidth);
+          canvas.width=Math.max(1,Math.round(video.videoWidth*scale));
+          canvas.height=Math.max(1,Math.round(video.videoHeight*scale));
+          ctx.drawImage(video,0,0,canvas.width,canvas.height);
+          const frame=ctx.getImageData(0,0,canvas.width,canvas.height);
+          const result=window.jsQR(frame.data,frame.width,frame.height,{inversionAttempts:'dontInvert'});
+          raw=result?.data||'';
         }
+        if(raw){applyQrRaw(raw);return}
       }catch(err){console.warn('QR scan',err)}
-      qrScanTimer=setTimeout(scan,250);
+      qrScanTimer=setTimeout(scan,detector?250:350);
     };
     scan();
   }catch(err){
@@ -803,6 +832,7 @@ async function syncPendingLocalData(){
   }
 
   if(await syncPendingEvidenceQueue())changed=true;
+  if(await syncPendingReminders())changed=true;
 
   if(changed){
     save();
@@ -1135,32 +1165,110 @@ async function renderMemberSchedule(member,preloadedInput){
   }
 }
 
+function getLocalReminders(){
+  try{return JSON.parse(localStorage.getItem('vat_family_reminders')||'[]')}catch{return []}
+}
+
+function putLocalReminder(reminder){
+  const reminders=getLocalReminders();
+  const key=[reminder.memberId,reminder.ruleId,reminder.targetDate||''].join('|');
+  const idx=reminders.findIndex(r=>[r.memberId,r.ruleId,r.targetDate||''].join('|')===key);
+  const next={...reminder,pendingSync:reminder.pendingSync!==false};
+  if(idx>=0)reminders[idx]={...reminders[idx],...next};
+  else reminders.push(next);
+  localStorage.setItem('vat_family_reminders',JSON.stringify(reminders));
+}
+
+function removeLocalReminder(memberId,ruleId,targetDate){
+  const key=[memberId,ruleId,targetDate||''].join('|');
+  const reminders=getLocalReminders().filter(r=>[r.memberId,r.ruleId,r.targetDate||''].join('|')!==key);
+  localStorage.setItem('vat_family_reminders',JSON.stringify(reminders));
+}
+
+async function syncPendingReminders(){
+  if(!backendReady || !session?.user || !navigator.onLine)return false;
+  const reminders=getLocalReminders();
+  let changed=false;
+  for(const reminder of reminders.filter(r=>r.pendingSync!==false)){
+    const member=state.members.find(m=>m.id===reminder.memberId);
+    if(!member || member.syncStatus==='pending')continue;
+    const payload={
+      family_member_id:reminder.memberId,
+      engine_rule_id:reminder.ruleId,
+      vaccine_code:reminder.vaccine,
+      dose_code:reminder.dose||null,
+      target_date:reminder.targetDate||null,
+      remind_days_before:7,
+      status:'activo',
+      created_by:session.user.id,
+      updated_at:new Date().toISOString()
+    };
+    try{
+      const {error}=await sb.from('family_reminders').upsert(payload,{
+        onConflict:'family_member_id,engine_rule_id,target_date',
+        ignoreDuplicates:false
+      });
+      if(error)throw error;
+      removeLocalReminder(reminder.memberId,reminder.ruleId,reminder.targetDate);
+      changed=true;
+    }catch(err){
+      if(isOfflineError(err))break;
+      console.warn('No se pudo sincronizar recordatorio',err);
+    }
+  }
+  return changed;
+}
+
 async function saveEngineReminder(member,item,button){
-  if(!backendReady || !session?.user){
-    const reminders=JSON.parse(localStorage.getItem('vat_family_reminders')||'[]');
-    reminders.push({memberId:member.id,ruleId:item.id,vaccine:item.vaccine,dose:item.dose,targetDate:item.minimumDate||item.targetDate||'',createdAt:new Date().toISOString()});
-    localStorage.setItem('vat_family_reminders',JSON.stringify(reminders));
-    button.textContent='✓ Recordatorio guardado';button.classList.add('reminder-saved');button.disabled=true;
-    toast('Recordatorio guardado en este dispositivo');
+  const target=item.minimumDate||item.targetDate||'';
+  const local={
+    memberId:member.id,
+    ruleId:item.id,
+    vaccine:item.vaccine,
+    dose:item.dose||'',
+    targetDate:target,
+    createdAt:new Date().toISOString(),
+    pendingSync:true
+  };
+
+  if(!backendReady || !session?.user || !navigator.onLine){
+    putLocalReminder(local);
+    button.textContent='✓ Recordatorio guardado';
+    button.classList.add('reminder-saved');
+    button.disabled=true;
+    toast('Recordatorio guardado en este dispositivo; se sincronizará al volver internet');
     return;
   }
-  const target=item.minimumDate||item.targetDate||null;
+
   const payload={
     family_member_id:member.id,
     engine_rule_id:item.id,
     vaccine_code:item.vaccine,
     dose_code:item.dose||null,
-    target_date:target,
+    target_date:target||null,
     remind_days_before:7,
     status:'activo',
     created_by:session.user.id,
     updated_at:new Date().toISOString()
   };
-  const {error}=await sb.from('family_reminders').upsert(payload,{
-    onConflict:'family_member_id,engine_rule_id,target_date',
-    ignoreDuplicates:false
-  });
-  if(error)throw error;
-  button.textContent='✓ Recordatorio guardado';button.classList.add('reminder-saved');button.disabled=true;
-  toast('Recordatorio guardado en VAT Familias');
+
+  try{
+    const {error}=await sb.from('family_reminders').upsert(payload,{
+      onConflict:'family_member_id,engine_rule_id,target_date',
+      ignoreDuplicates:false
+    });
+    if(error)throw error;
+    removeLocalReminder(member.id,item.id,target);
+    button.textContent='✓ Recordatorio guardado';
+    button.classList.add('reminder-saved');
+    button.disabled=true;
+    toast('Recordatorio guardado en VAT Familias');
+  }catch(err){
+    if(!isOfflineError(err))throw err;
+    putLocalReminder(local);
+    button.textContent='✓ Recordatorio guardado';
+    button.classList.add('reminder-saved');
+    button.disabled=true;
+    toast('Recordatorio guardado localmente; se sincronizará al volver internet');
+  }
 }
