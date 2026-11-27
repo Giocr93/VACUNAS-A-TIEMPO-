@@ -15,7 +15,7 @@ OUT=Path('dist')
 seen=set()
 
 def fetch(u):
-    req=Request(u,headers={'User-Agent':'VAT-Netlify-Bootstrap/2.3.4.25'})
+    req=Request(u,headers={'User-Agent':'VAT-Netlify-Bootstrap/2.3.4.26'})
     with urlopen(req,timeout=30) as r:
         return r.read()
 
@@ -97,7 +97,7 @@ safe_direct = r'''async function directPublishPortalAccess(p){
   const session=await waitForCloudSession(8000);if(!session)return false;
   const c=await window.VATCloud.getClient();
 
-  // v2.3.4.24: consulta estrictamente dirigida al paciente actual.
+  // v2.3.4.26: consulta estrictamente dirigida al paciente actual.
   // Nunca descargar el padrón completo para publicar un portal.
   const curp=String(p?.curp||'').trim().toUpperCase();
   const ids=[p?._syncId,p?.id,p?.globalPatientId,p?.global_patient_id,p?.canonicalPatientId,p?.patientCanonicalId,curp?('curp-'+curp):'']
@@ -178,7 +178,7 @@ start=s.find('async function publishLegacyFamilyAccesses(){')
 end=s.find('async function openStaff',start)
 if start>=0 and end>start:
     s=s[:start]+"""async function publishLegacyFamilyAccesses(){
- // v2.3.4.24: desactivado deliberadamente para evitar egress masivo.
+ // v2.3.4.26: desactivado deliberadamente para evitar egress masivo.
  return {ok:true,skipped:true,reason:'mass_publish_disabled'};
 }
 """+s[end:]
@@ -188,12 +188,12 @@ start=s.find('let legacyPublishTimer=null;')
 if start>=0:
     end=s.find('function init(){',start)
     if end>start:
-        s=s[:start]+"// v2.3.4.24: sin publicación masiva al foco/reconexión/sync.\n\n"+s[end:]
+        s=s[:start]+"// v2.3.4.26: sin publicación masiva al foco/reconexión/sync.\n\n"+s[end:]
 
 # Quitar llamada automática al iniciar si aún existe
 s=s.replace(
 "if(familyRoute){ document.getElementById('app')?.classList.add('hidden'); document.getElementById('login')?.classList.add('hidden'); hashLogin(); } else { setTimeout(()=>publishLegacyFamilyAccesses(),0); }",
-"if(familyRoute){ document.getElementById('app')?.classList.add('hidden'); document.getElementById('login')?.classList.add('hidden'); hashLogin(); } else { /* v2.3.4.24: sin publicación masiva */ }"
+"if(familyRoute){ document.getElementById('app')?.classList.add('hidden'); document.getElementById('login')?.classList.add('hidden'); hashLogin(); } else { /* v2.3.4.26: sin publicación masiva */ }"
 )
 
 # Validaciones duras
@@ -205,7 +205,7 @@ if 'scheduleLegacyPublish' in s:
 
 portal.write_text(s,'utf-8')
 
-# v2.3.4.25: normalizar filtros unit_id antes de que lleguen a PostgREST.
+# v2.3.4.26: normalizar filtros unit_id antes de que lleguen a PostgREST.
 # unit_id es UUID en Supabase; versiones previas añadían también el nombre humano
 # de la unidad al operador in.(...), provocando HTTP 400 y dejando sync en Error.
 idxp=OUT/'index.html'
@@ -251,16 +251,35 @@ if idxp.exists():
             html=shim+html
         idxp.write_text(html,'utf-8')
 
+# v2.3.4.26: corregir ReferenceError allRemote en reconciliación de pendientes.
+# La rutina optimizada remoteForOps ya existe y debe consultar únicamente
+# los registros que fallaron en el segundo intento.
+for js in OUT.rglob('*.js'):
+    txt=js.read_text('utf-8',errors='ignore')
+    if 'await allRemote()' in txt:
+        txt=txt.replace('const latest=await allRemote();','const latest=await remoteForOps(retryBad);')
+        txt=txt.replace('await allRemote()','await remoteForOps(retryBad)')
+        js.write_text(txt,'utf-8')
+
+# Validar que no quede ninguna llamada ejecutable a allRemote
+remaining=[]
+for js in OUT.rglob('*.js'):
+    txt=js.read_text('utf-8',errors='ignore')
+    if 'await allRemote()' in txt:
+        remaining.append(str(js))
+if remaining:
+    raise SystemExit('Persistió allRemote en: '+', '.join(remaining))
+
 # Cache/version
 if sw.exists():
     t=sw.read_text('utf-8',errors='ignore')
-    t=re.sub(r"const CACHE_NAME='[^']+';","const CACHE_NAME='vat-v2.3.4.25';",t,count=1)
+    t=re.sub(r"const CACHE_NAME='[^']+';","const CACHE_NAME='vat-v2.3.4.26';",t,count=1)
     sw.write_text(t,'utf-8')
 
 vp=OUT/'version.json'
 if vp.exists():
     t=vp.read_text('utf-8',errors='ignore')
-    vp.write_text(re.sub(r'2\.3\.4\.\d+','2.3.4.24',t),'utf-8')
+    vp.write_text(re.sub(r'2\.3\.4\.\d+','2.3.4.26',t),'utf-8')
 
 print('OK recursos:',len(seen))
 PY
@@ -268,4 +287,4 @@ PY
 test -f dist/index.html
 test -f dist/js/modules/module-28-vat-v19291-family-portal.js
 
-echo "VAT v2.3.4.24 lista"
+echo "VAT v2.3.4.26 lista"
