@@ -309,12 +309,31 @@
       <div class="card">
         <button class="back" data-back="home" type="button">← Regresar</button>
         <h2>Vincular con Vacunas a Tiempo</h2>
-        <p class="muted">En la siguiente fase conectaremos aquí el lector del QR actual y el folio del Portal Familiar.</p>
-        <div class="qr-demo">▦</div>
-        <label>Folio / código
-          <input id="linkCode" placeholder="VAT-XXXXXX">
+        <p class="muted">Usa el QR o los datos que aparecen en el acceso familiar. No se creará otro paciente.</p>
+
+        <div class="notice">
+          <strong>Opción más fácil:</strong> pega aquí el contenido del QR o el enlace si ya lo tienes abierto.
+        </div>
+
+        <label>QR / enlace
+          <textarea id="linkQrText" rows="3" placeholder="Pega aquí el enlace o contenido del QR"></textarea>
         </label>
-        <button id="btnMockLink" class="secondary full" type="button">Probar vinculación (demo)</button>
+        <button id="btnParseQr" class="secondary full" type="button">Usar datos del QR</button>
+
+        <div class="divider"><span>o captura manualmente</span></div>
+
+        <div class="form-grid">
+          <label>Folio
+            <input id="linkFolio" placeholder="Folio del Portal Familiar">
+          </label>
+          <label>Código / token
+            <input id="linkToken" placeholder="Código de acceso">
+          </label>
+        </div>
+
+        <div id="linkPreview" class="summary-card hidden"></div>
+
+        <button id="btnMockLink" class="primary full" type="button">Vincular esta cartilla</button>
       </div>
     </section>
   </main>
