@@ -1,4 +1,4 @@
-const CACHE='vat-familias-mvp-v4';
+const CACHE='vat-familias-mvp-v5';
 const ASSETS=[
   './','./index.html','./styles.css','./app.js','./manifest.webmanifest',
   '../shared/vat-clinical-engine.js','./vendor/jsQR.js'
