@@ -11,6 +11,8 @@ let state=load();
 let currentMemberId=null;
 let assistedDraft={cartilla:null,name:'',date:'',dose:'',lot:'',institution:'',notes:''};
 let assistedStep=1;
+let quickEvidenceFile=null;
+let assistEvidenceFile=null;
 
 function defaultState(){return {account:null,members:[]}}
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||defaultState()}catch{return defaultState()}}
@@ -143,10 +145,17 @@ qs('#vaccineForm').onsubmit=async e=>{
   };
   try{
     if(backendReady)v=await saveVaccineToSupabase(m,v);
+    let evidenceSaved=false;
+    if(backendReady && quickEvidenceFile){
+      try{await uploadVaccineEvidence(v.id,quickEvidenceFile);evidenceSaved=true}
+      catch(photoErr){console.warn(photoErr);toast('La vacuna se guardó, pero la foto no pudo subirse')}
+    }
     m.vaccines=m.vaccines||[];
-    m.vaccines.push(v);
-    save();e.target.reset();show('card');
-    toast(backendReady?'Vacuna guardada en tu cuenta':'Vacuna guardada en modo local');
+    m.vaccines.push({...v,evidenceCount:evidenceSaved?1:0});
+    const hadEvidence=!!quickEvidenceFile;
+    save();e.target.reset();clearEvidenceInput('quick');show('card');
+    if(!hadEvidence)toast(backendReady?'Vacuna guardada en tu cuenta':'Vacuna guardada en modo local');
+    else if(evidenceSaved)toast('Vacuna y foto guardadas');
   }catch(err){toast(err.message||'No se pudo guardar la vacuna')}
 };
 
@@ -236,6 +245,7 @@ function startAssisted(){
   assistedStep=1;
   qs('#assistDate').value='';
   qs('#assistLot').value='';
+  clearEvidenceInput('assist');
   renderAssistedStep();
   show('assisted');
 }
@@ -321,10 +331,17 @@ qs('#assistSave').onclick=async()=>{
   };
   try{
     if(backendReady)v=await saveVaccineToSupabase(m,v);
+    let evidenceSaved=false;
+    const hadEvidence=!!assistEvidenceFile;
+    if(backendReady && assistEvidenceFile){
+      try{await uploadVaccineEvidence(v.id,assistEvidenceFile);evidenceSaved=true}
+      catch(photoErr){console.warn(photoErr);toast('El antecedente se guardó, pero la foto no pudo subirse')}
+    }
     m.vaccines=m.vaccines||[];
-    m.vaccines.push(v);
-    save();show('card');
-    toast(backendReady?'Antecedente guardado en tu cuenta':'Antecedente guardado localmente');
+    m.vaccines.push({...v,evidenceCount:evidenceSaved?1:0});
+    save();clearEvidenceInput('assist');show('card');
+    if(!hadEvidence)toast(backendReady?'Antecedente guardado en tu cuenta':'Antecedente guardado localmente');
+    else if(evidenceSaved)toast('Antecedente y foto guardados');
   }catch(err){toast(err.message||'No se pudo guardar el antecedente')}
 };
 
@@ -524,3 +541,79 @@ async function logoutFamily(){
 })();
 
 qs('#btnLogout').onclick=()=>logoutFamily();
+
+
+function bindEvidencePicker(inputSelector,previewSelector,setter){
+  const input=qs(inputSelector), preview=qs(previewSelector);
+  if(!input||!preview)return;
+  input.addEventListener('change',()=>{
+    const file=input.files?.[0]||null;
+    setter(file);
+    if(!file){preview.classList.add('hidden');preview.removeAttribute('src');return}
+    if(!file.type.startsWith('image/')){toast('Selecciona una imagen');input.value='';setter(null);return}
+    const url=URL.createObjectURL(file);
+    preview.src=url;preview.classList.remove('hidden');
+    preview.onload=()=>URL.revokeObjectURL(url);
+  });
+}
+
+bindEvidencePicker('#quickEvidence','#quickEvidencePreview',f=>quickEvidenceFile=f);
+bindEvidencePicker('#assistEvidence','#assistEvidencePreview',f=>assistEvidenceFile=f);
+
+async function prepareEvidenceImage(file){
+  if(!file)return null;
+  if(file.size>15*1024*1024)throw new Error('La foto es demasiado grande. Intenta otra imagen.');
+  const bitmap=await createImageBitmap(file);
+  const maxSide=2000;
+  const scale=Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));
+  const w=Math.max(1,Math.round(bitmap.width*scale));
+  const h=Math.max(1,Math.round(bitmap.height*scale));
+  const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+  const ctx=canvas.getContext('2d');ctx.drawImage(bitmap,0,0,w,h);
+  bitmap.close?.();
+  const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('No se pudo preparar la foto')),'image/jpeg',0.86));
+  return blob;
+}
+
+async function sha256Hex(blob){
+  const buf=await blob.arrayBuffer();
+  const hash=await crypto.subtle.digest('SHA-256',buf);
+  return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function uploadVaccineEvidence(entryId,file){
+  if(!file || !backendReady || !session?.user || !entryId)return null;
+  const blob=await prepareEvidenceImage(file);
+  const uid=session.user.id;
+  const fileId=crypto.randomUUID?.()||id();
+  const path=uid+'/'+entryId+'/'+fileId+'.jpg';
+  const {error:upErr}=await sb.storage.from('family-evidence').upload(path,blob,{
+    contentType:'image/jpeg',
+    upsert:false,
+    cacheControl:'3600'
+  });
+  if(upErr)throw upErr;
+  const sha=await sha256Hex(blob);
+  const {data,error}=await sb.from('family_evidence').insert({
+    vaccine_entry_id:entryId,
+    storage_bucket:'family-evidence',
+    storage_path:path,
+    mime_type:'image/jpeg',
+    file_size_bytes:blob.size,
+    sha256:sha,
+    created_by:uid
+  }).select('id,storage_path').single();
+  if(error){
+    await sb.storage.from('family-evidence').remove([path]).catch(()=>{});
+    throw error;
+  }
+  return data;
+}
+
+function clearEvidenceInput(kind){
+  const input=qs(kind==='quick'?'#quickEvidence':'#assistEvidence');
+  const preview=qs(kind==='quick'?'#quickEvidencePreview':'#assistEvidencePreview');
+  if(input)input.value='';
+  if(preview){preview.classList.add('hidden');preview.removeAttribute('src')}
+  if(kind==='quick')quickEvidenceFile=null;else assistEvidenceFile=null;
+}
