@@ -27,6 +27,7 @@
     <section id="viewWelcome" class="view active">
       <div class="hero card">
         <div class="hero-icon">👨‍👩‍👧‍👦</div>
+        <span class="audience-badge">Acceso para madres, padres y tutores</span>
         <h1>Vacunas a Tiempo para tu familia</h1>
         <p>Guarda las cartillas de tus hijos, registra antecedentes y consulta próximas vacunas.</p>
         <div class="notice">
@@ -37,6 +38,11 @@
           <button id="btnStart" class="primary" type="button">Crear mi cuenta familiar</button>
           <button id="btnLinkExisting" class="secondary" type="button">Ya tengo un QR de Vacunas a Tiempo</button>
         </div>
+        <div class="professional-entry">
+          <span>¿Eres personal de salud?</span>
+          <a href="https://vacunasatiempo.netlify.app/" rel="noopener">Entrar a Vacunas a Tiempo Profesional →</a>
+          <small>El acceso profesional requiere una cuenta autorizada.</small>
+        </div>
       </div>
     </section>
 
@@ -44,7 +50,7 @@
       <div class="card">
         <button class="back" data-back="welcome" type="button">← Regresar</button>
         <h2>Crear cuenta familiar</h2>
-        <p class="muted">Esta primera versión guarda los datos solo en este dispositivo para probar el flujo.</p>
+        <p class="muted">Esta cuenta es exclusiva para madres, padres o tutores. Tus cartillas se sincronizan con VAT Familias y, cuando corresponde, con Vacunas a Tiempo.</p>
         <form id="accountForm" class="form-grid">
           <label>Nombre del padre, madre o tutor
             <input id="accountName" required autocomplete="name" placeholder="Ej. Mariana Rosario">
