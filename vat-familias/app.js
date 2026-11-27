@@ -59,11 +59,22 @@ function renderCard(){
   qs('#emptyVaccines').classList.toggle('hidden',vaccines.length>0);
   vaccines.forEach(v=>{
     const el=document.createElement('div');el.className='vaccine-row';
-    el.innerHTML=`<div class="vaccine-row-top"><strong>${escapeHtml(v.name)}</strong><span class="status family">Familia</span></div><small>${escapeHtml(v.dose||'Dosis no especificada')} · ${escapeHtml(v.date||'')}</small><small>${v.lot?'Lote '+escapeHtml(v.lot)+' · ':''}${escapeHtml(v.institution||'')}</small>`;
+    const sm=vaccineStatusMeta(v);
+    el.innerHTML=`<div class="vaccine-row-top"><strong>${escapeHtml(v.name)}</strong><span class="status ${sm.cls}">${escapeHtml(sm.label)}</span></div><small>${escapeHtml(v.dose||'Dosis no especificada')} · ${escapeHtml(v.date||'Fecha no especificada')}</small><small>${v.lot?'Lote '+escapeHtml(v.lot)+' · ':''}${escapeHtml(v.institution||'')}</small>`;
     vl.appendChild(el);
   });
 }
 
+function vaccineStatusMeta(v){
+  if(v?.source==='profesional' || v?.linkedVaccinationId)return {cls:'professional',label:'Unidad de salud'};
+  switch(v?.status){
+    case 'verificado': return {cls:'verified',label:'Verificada'};
+    case 'pendiente_verificacion': return {cls:'pending',label:'Pendiente'};
+    case 'requiere_aclaracion': return {cls:'pending',label:'Requiere aclaración'};
+    case 'rechazado': return {cls:'pending',label:'No verificada'};
+    default: return {cls:'family',label:'Familia'};
+  }
+}
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 qs('#btnStart').onclick=()=>show('account');
@@ -115,12 +126,28 @@ qs('#btnAssistedMode').onclick=()=>startAssisted();
 qs('#btnQuickMode').onclick=()=>show('vaccine');
 qs('#btnLinkMember').onclick=()=>show('link');
 
-qs('#vaccineForm').onsubmit=e=>{
+qs('#vaccineForm').onsubmit=async e=>{
   e.preventDefault();
   const m=state.members.find(x=>x.id===currentMemberId);if(!m)return;
-  m.vaccines=m.vaccines||[];
-  m.vaccines.push({id:id(),name:qs('#vaccineName').value,dose:qs('#vaccineDose').value.trim(),date:qs('#vaccineDate').value,lot:qs('#vaccineLot').value.trim(),institution:qs('#vaccineInstitution').value.trim(),notes:qs('#vaccineNotes').value.trim(),status:'capturado_familia'});
-  save();e.target.reset();show('card');toast('Vacuna guardada como antecedente familiar');
+  let v={
+    id:id(),
+    name:qs('#vaccineName').value,
+    dose:qs('#vaccineDose').value.trim(),
+    date:qs('#vaccineDate').value,
+    lot:qs('#vaccineLot').value.trim(),
+    institution:qs('#vaccineInstitution').value.trim(),
+    notes:qs('#vaccineNotes').value.trim(),
+    status:'capturado_familia',
+    source:'familia',
+    captureMode:'rapido'
+  };
+  try{
+    if(backendReady)v=await saveVaccineToSupabase(m,v);
+    m.vaccines=m.vaccines||[];
+    m.vaccines.push(v);
+    save();e.target.reset();show('card');
+    toast(backendReady?'Vacuna guardada en tu cuenta':'Vacuna guardada en modo local');
+  }catch(err){toast(err.message||'No se pudo guardar la vacuna')}
 };
 
 function parsePortalCredentials(raw){
@@ -277,11 +304,10 @@ function renderAssistSummary(){
 
 qs('#assistEdit').onclick=()=>nextAssist(2);
 
-qs('#assistSave').onclick=()=>{
+qs('#assistSave').onclick=async()=>{
   const m=state.members.find(x=>x.id===currentMemberId);
   if(!m)return;
-  m.vaccines=m.vaccines||[];
-  m.vaccines.push({
+  let v={
     id:id(),
     name:assistedDraft.name||'No especificada',
     dose:assistedDraft.dose,
@@ -290,11 +316,16 @@ qs('#assistSave').onclick=()=>{
     institution:'',
     notes:assistedDraft.cartilla==='si'?'Capturado con cartilla a la mano':'Capturado de memoria',
     status:'capturado_familia',
+    source:'familia',
     captureMode:'asistido'
-  });
-  save();
-  show('card');
-  toast('Antecedente guardado');
+  };
+  try{
+    if(backendReady)v=await saveVaccineToSupabase(m,v);
+    m.vaccines=m.vaccines||[];
+    m.vaccines.push(v);
+    save();show('card');
+    toast(backendReady?'Antecedente guardado en tu cuenta':'Antecedente guardado localmente');
+  }catch(err){toast(err.message||'No se pudo guardar el antecedente')}
 };
 
 
@@ -322,13 +353,33 @@ async function ensureFamilyAccount(profile){
 async function loadMembersFromSupabase(){
   if(!sb || !familyAccountId)return;
   const {data,error}=await sb.from('family_members')
-    .select('id,full_name,curp,birth_date,sex,relationship_to_account,link_status,linked_patient_id')
+    .select(`id,full_name,curp,birth_date,sex,relationship_to_account,link_status,linked_patient_id,
+      family_vaccine_entries(
+        id,vaccine_code,dose_code,application_date,lot_number,manufacturer,institution_name,notes,
+        source,verification_status,linked_vaccination_id,verified_at,verification_notes,created_at
+      )`)
     .eq('family_account_id',familyAccountId)
     .order('created_at',{ascending:true});
   if(error)throw error;
   state.members=(data||[]).map(x=>({
     id:x.id,name:x.full_name,curp:x.curp||'',dob:x.birth_date||'',sex:x.sex||'',
-    relationship:x.relationship_to_account||'hijo',vaccines:[],linkStatus:x.link_status,
+    relationship:x.relationship_to_account||'hijo',
+    vaccines:(x.family_vaccine_entries||[]).map(v=>({
+      id:v.id,
+      name:v.vaccine_code,
+      dose:v.dose_code||'',
+      date:v.application_date||'',
+      lot:v.lot_number||'',
+      manufacturer:v.manufacturer||'',
+      institution:v.institution_name||'',
+      notes:v.notes||'',
+      source:v.source||'familia',
+      status:v.verification_status||'capturado_familia',
+      linkedVaccinationId:v.linked_vaccination_id||null,
+      verifiedAt:v.verified_at||null,
+      verificationNotes:v.verification_notes||''
+    })),
+    linkStatus:x.link_status,
     linkedPatientId:x.linked_patient_id||null
   }));
   save();
@@ -398,6 +449,44 @@ async function saveMemberToSupabase(m){
   if(error)throw error;
   return {
     ...m,id:data.id,linkStatus:data.link_status,linkedPatientId:data.linked_patient_id||null
+  };
+}
+
+async function saveVaccineToSupabase(member,v){
+  if(!backendReady || !sb || !session?.user)return v;
+  const payload={
+    family_member_id:member.id,
+    vaccine_code:v.name||'No especificada',
+    dose_code:v.dose||null,
+    application_date:v.date||null,
+    lot_number:v.lot||null,
+    manufacturer:v.manufacturer||null,
+    institution_name:v.institution||null,
+    notes:v.notes||null,
+    source:'familia',
+    verification_status:'capturado_familia',
+    created_by:session.user.id
+  };
+  const {data,error}=await sb.from('family_vaccine_entries')
+    .insert(payload)
+    .select('id,vaccine_code,dose_code,application_date,lot_number,manufacturer,institution_name,notes,source,verification_status,linked_vaccination_id,verified_at,verification_notes')
+    .single();
+  if(error)throw error;
+  return {
+    ...v,
+    id:data.id,
+    name:data.vaccine_code,
+    dose:data.dose_code||'',
+    date:data.application_date||'',
+    lot:data.lot_number||'',
+    manufacturer:data.manufacturer||'',
+    institution:data.institution_name||'',
+    notes:data.notes||'',
+    source:data.source||'familia',
+    status:data.verification_status||'capturado_familia',
+    linkedVaccinationId:data.linked_vaccination_id||null,
+    verifiedAt:data.verified_at||null,
+    verificationNotes:data.verification_notes||''
   };
 }
 
