@@ -19,3 +19,12 @@ button{cursor:pointer}.shell{max-width:820px;margin:auto;padding:16px 16px 48px}
 .vaccine-list{display:grid;gap:10px}.vaccine-row{border:1px solid var(--line);border-radius:15px;padding:13px;display:grid;gap:5px}.vaccine-row-top{display:flex;justify-content:space-between;gap:10px}.vaccine-row strong{font-size:16px}.vaccine-row small{color:var(--muted)}.empty-inline{text-align:center;color:var(--muted);padding:12px}
 .qr-demo{font-size:110px;text-align:center;color:var(--brand);line-height:1;margin:20px 0}.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#173f39;color:#fff;padding:10px 14px;border-radius:12px;opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1}
 @media(max-width:600px){.shell{padding:12px 12px 36px}.hero h1{font-size:25px}.two-col{grid-template-columns:1fr}.home-head{align-items:stretch;flex-direction:column}.home-head .compact{align-self:flex-start}}
+
+.wizard-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:18px}
+.wizard-progress{background:var(--soft);color:var(--brand);font-weight:800;border-radius:999px;padding:6px 10px;font-size:12px;white-space:nowrap}
+.wizard-step{display:none}.wizard-step.active{display:block}.wizard-step h3{font-size:24px;margin:8px 0 6px}
+.choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.choice-btn{border:1px solid var(--line);background:#fff;border-radius:18px;padding:20px 14px;text-align:left;display:grid;gap:6px;color:var(--ink)}.choice-btn:hover{border-color:var(--brand);background:var(--soft)}.choice-icon{font-size:34px}.choice-btn small{color:var(--muted)}
+.choice-list{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}.choice-list button{border:1px solid var(--line);background:#fff;border-radius:14px;padding:13px 12px;text-align:left;font-weight:700;color:var(--ink)}.choice-list button:hover{border-color:var(--brand);background:var(--soft)}
+.wizard-field{display:grid;gap:6px;font-weight:700;margin:16px 0}.wizard-field input{width:100%;border:1px solid #bfd3cf;border-radius:12px;padding:13px;background:#fff}
+.summary-card{background:var(--soft);border-radius:16px;padding:16px;display:grid;gap:10px;margin:14px 0}.summary-row{display:flex;justify-content:space-between;gap:14px}.summary-row span:first-child{color:var(--muted)}.summary-row strong{text-align:right}
+@media(max-width:600px){.choice-grid,.choice-list{grid-template-columns:1fr}.wizard-step h3{font-size:22px}}
