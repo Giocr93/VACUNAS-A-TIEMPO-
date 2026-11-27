@@ -170,7 +170,7 @@ function unifiedRecordsFromInput(input,member){
 async function refreshUnifiedCard(member){
   const memberId=member.id;
   try{
-    const input=preloadedInput||await getScheduleInput(member);
+    const input=await getScheduleInput(member);
     if(currentMemberId!==memberId)return;
     const records=unifiedRecordsFromInput(input,member);
     member.cardCache=records;
@@ -209,7 +209,15 @@ function vaccineStatusMeta(v){
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 qs('#btnStart').onclick=()=>show('account');
-qs('#btnLinkExisting').onclick=()=>show('link');
+qs('#btnLogin').onclick=()=>show('login');
+qs('#btnLinkExisting').onclick=()=>{
+  if(!state.account){
+    toast('Primero crea tu cuenta o inicia sesión; después podrás vincular una cartilla con QR.');
+    show('login');
+    return;
+  }
+  show('link');
+};
 qs('#btnAddMemberTop').onclick=qs('#btnAddMemberEmpty').onclick=()=>show('member');
 qs('#btnLinkFromHome').onclick=()=>show('link');
 qsa('.back').forEach(b=>b.onclick=()=>show(b.dataset.back));
@@ -230,14 +238,19 @@ qs('#accountForm').onsubmit=async e=>{
   }catch(err){toast(err.message||'No fue posible crear la cuenta')}
 };
 
-qs('#btnExistingAccount').onclick=async()=>{
-  const email=qs('#accountEmail').value.trim();
-  const password=qs('#accountPassword').value;
+qs('#loginForm').onsubmit=async e=>{
+  e.preventDefault();
+  const email=qs('#loginEmail').value.trim();
+  const password=qs('#loginPassword').value;
   if(!email||!password){toast('Escribe correo y contraseña');return}
   try{
     await signInFamily(email,password);
-    show('home');toast('Sesión iniciada');
-  }catch(err){toast(err.message||'No fue posible iniciar sesión')}
+    e.target.reset();
+    show('home');
+    toast('Sesión iniciada');
+  }catch(err){
+    toast(err.message||'No fue posible iniciar sesión');
+  }
 };
 
 qs('#memberForm').onsubmit=async e=>{
@@ -1103,7 +1116,7 @@ async function renderMemberSchedule(member,preloadedInput){
   try{
     const engine=window.VATClinicalEngine;
     if(!engine)throw new Error('Motor clínico no disponible');
-    const input=await getScheduleInput(member);
+    const input=preloadedInput||await getScheduleInput(member);
     if(currentMemberId!==memberId)return;
     const birth=input.member?.birth_date||member.dob;
     if(!birth){
