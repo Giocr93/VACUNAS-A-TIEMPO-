@@ -29,3 +29,38 @@ using (
   )
  )
 );
+
+create or replace function public.can_read_family_evidence_object(p_storage_path text)
+returns boolean
+language sql
+security definer
+stable
+set search_path=public
+as $$
+  select exists (
+    select 1
+    from public.family_evidence fe
+    join public.family_vaccine_entries e on e.id=fe.vaccine_entry_id
+    join public.family_links fl on fl.family_member_id=e.family_member_id and fl.status='aprobado'
+    where fe.storage_path=p_storage_path
+      and (
+        exists (select 1 from public.profiles p where p.id=auth.uid() and p.active=true and p.unit_id=fl.unit_id)
+        or exists (select 1 from public.user_unit_memberships m where m.user_id=auth.uid() and m.unit_id=fl.unit_id and m.active=true)
+        or exists (select 1 from public.profiles p where p.id=auth.uid() and p.active=true and p.role='administrador')
+      )
+  );
+$$;
+
+revoke all on function public.can_read_family_evidence_object(text) from public;
+revoke execute on function public.can_read_family_evidence_object(text) from anon;
+grant execute on function public.can_read_family_evidence_object(text) to authenticated;
+
+drop policy if exists "family_evidence_professional_read" on storage.objects;
+create policy "family_evidence_professional_read"
+on storage.objects
+for select
+to authenticated
+using (
+  bucket_id='family-evidence'
+  and public.can_read_family_evidence_object(name)
+);
