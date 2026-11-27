@@ -43,3 +43,21 @@ button{cursor:pointer}.shell{max-width:820px;margin:auto;padding:16px 16px 48px}
 .schedule-alert{margin-top:10px;border-radius:13px;padding:10px 12px;background:#fff3cd;color:#735b00;font-size:13px}.schedule-ok{margin-top:10px;border-radius:13px;padding:10px 12px;background:#dff5e5;color:#216a37;font-size:13px}.schedule-due{display:grid;gap:8px;margin-top:12px}.schedule-dose{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding-top:9px}.schedule-dose small{color:var(--muted)}.section-title{margin:18px 2px 8px}.section-title h3{margin:0}
 .reminder-saved{background:#e4f4ff!important;color:#245b82!important}
 @media(max-width:600px){.schedule-top{flex-direction:column}.schedule-score{min-width:0;width:100%}.schedule-dose{flex-direction:column}}
+
+
+.top-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.connection-badge{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 9px;font-size:12px;font-weight:800;color:#276749}
+.connection-badge.offline{background:#fff3cd;color:#735b00;border-color:#efd58a}
+.small-text{font-size:12px}
+.section-title{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.section-title .eyebrow{margin-bottom:3px}
+.vaccine-row.professional-record{border-left:4px solid #4b83c5;background:#fbfdff}
+.vaccine-row.family-record{border-left:4px solid #d3a400}
+.vaccine-row.verified-record{border-left:4px solid #3c9b57;background:#fbfffc}
+.vaccine-source{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.qr-scanner{position:relative;margin:14px 0;border:1px solid var(--line);border-radius:18px;padding:12px;background:#071b18;overflow:hidden}
+.qr-scanner video{display:block;width:100%;max-height:420px;object-fit:cover;border-radius:13px;background:#000}
+.qr-guide{position:absolute;left:50%;top:46%;width:min(68%,270px);aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.9);border-radius:18px;box-shadow:0 0 0 999px rgba(0,0,0,.18);pointer-events:none}
+.qr-scanner p{color:#dff7f2;text-align:center;margin:10px 0 4px}
+.qr-scanner .ghost{color:#fff}
+@media(max-width:600px){.topbar{align-items:flex-start}.top-actions{max-width:48%}.section-title{align-items:flex-start;flex-direction:column}.qr-guide{width:70%}}
