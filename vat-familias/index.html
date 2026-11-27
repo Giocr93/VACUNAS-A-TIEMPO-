@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0f766e">
+  <title>VAT Familias</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">💉</div>
+        <div>
+          <strong>VAT Familias</strong>
+          <span>Tu cartilla de vacunación, siempre contigo</span>
+        </div>
+      </div>
+      <button id="btnReset" class="ghost small hidden" type="button">Reiniciar demo</button>
+    </header>
+
+    <section id="viewWelcome" class="view active">
+      <div class="hero card">
+        <div class="hero-icon">👨‍👩‍👧‍👦</div>
+        <h1>Vacunas a Tiempo para tu familia</h1>
+        <p>Guarda las cartillas de tus hijos, registra antecedentes y consulta próximas vacunas.</p>
+        <div class="notice">
+          <strong>Importante:</strong> los registros capturados por la familia se muestran como
+          <span class="status family">Capturado por la familia</span> hasta que personal de salud los verifique.
+        </div>
+        <div class="stack">
+          <button id="btnStart" class="primary" type="button">Crear mi cuenta familiar</button>
+          <button id="btnLinkExisting" class="secondary" type="button">Ya tengo un QR de Vacunas a Tiempo</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="viewAccount" class="view">
+      <div class="card">
+        <button class="back" data-back="welcome" type="button">← Regresar</button>
+        <h2>Crear cuenta familiar</h2>
+        <p class="muted">Esta primera versión guarda los datos solo en este dispositivo para probar el flujo.</p>
+        <form id="accountForm" class="form-grid">
+          <label>Nombre del padre, madre o tutor
+            <input id="accountName" required autocomplete="name" placeholder="Ej. Mariana Rosario">
+          </label>
+          <label>Teléfono
+            <input id="accountPhone" inputmode="tel" autocomplete="tel" placeholder="10 dígitos">
+          </label>
+          <label>Correo
+            <input id="accountEmail" type="email" autocomplete="email" placeholder="correo@ejemplo.com">
+          </label>
+          <label class="check">
+            <input id="accountConsent" type="checkbox" required>
+            <span>Acepto usar VAT Familias para organizar información de vacunación familiar.</span>
+          </label>
+          <button class="primary full" type="submit">Continuar</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="viewHome" class="view">
+      <div class="home-head">
+        <div>
+          <p class="eyebrow">MI FAMILIA</p>
+          <h1 id="helloTitle">Hola</h1>
+          <p class="muted">Selecciona una cartilla o agrega un integrante.</p>
+        </div>
+        <button id="btnAddMemberTop" class="primary compact" type="button">+ Agregar hijo</button>
+      </div>
+
+      <div id="membersList" class="members-grid"></div>
+
+      <div id="emptyMembers" class="card empty">
+        <div class="hero-icon">🧒</div>
+        <h3>Aún no tienes cartillas</h3>
+        <p>Agrega a tu hijo o dependiente para comenzar.</p>
+        <button id="btnAddMemberEmpty" class="primary" type="button">Agregar hijo</button>
+      </div>
+
+      <div class="card info-card">
+        <h3>¿Ya existe en Vacunas a Tiempo?</h3>
+        <p>Puedes vincular una cartilla profesional usando su QR o folio sin duplicar al paciente.</p>
+        <button id="btnLinkFromHome" class="secondary" type="button">Vincular con QR / folio</button>
+      </div>
+    </section>
+
+    <section id="viewMember" class="view">
+      <div class="card">
+        <button class="back" data-back="home" type="button">← Mi familia</button>
+        <h2>Agregar hijo o dependiente</h2>
+        <form id="memberForm" class="form-grid">
+          <label>Nombre completo
+            <input id="memberName" required placeholder="Nombre y apellidos">
+          </label>
+          <div class="two-col">
+            <label>Fecha de nacimiento
+              <input id="memberDob" type="date" required>
+            </label>
+            <label>Sexo
+              <select id="memberSex">
+                <option value="">Seleccionar</option>
+                <option value="F">Femenino</option>
+                <option value="M">Masculino</option>
+                <option value="X">Otro / no especificado</option>
+              </select>
+            </label>
+          </div>
+          <label>CURP <span class="optional">(opcional en esta prueba)</span>
+            <input id="memberCurp" maxlength="18" autocapitalize="characters" placeholder="CURP">
+          </label>
+          <label>Parentesco
+            <select id="memberRelationship">
+              <option value="hijo">Hijo/a</option>
+              <option value="dependiente">Dependiente</option>
+              <option value="otro">Otro</option>
+            </select>
+          </label>
+          <button class="primary full" type="submit">Guardar cartilla</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="viewCard" class="view">
+      <div class="card">
+        <button class="back" data-back="home" type="button">← Mi familia</button>
+        <div class="card-head">
+          <div>
+            <p class="eyebrow">CARTILLA DIGITAL</p>
+            <h2 id="cardMemberName"></h2>
+            <p id="cardMemberMeta" class="muted"></p>
+          </div>
+          <div class="avatar">🧒</div>
+        </div>
+
+        <div class="legend">
+          <span class="status family">Familia</span>
+          <span class="status pending">Pendiente</span>
+          <span class="status verified">Verificada</span>
+          <span class="status professional">Unidad de salud</span>
+        </div>
+
+        <div class="quick-actions">
+          <button id="btnAddVaccine" class="primary" type="button">+ Registrar vacuna</button>
+          <button id="btnLinkMember" class="secondary" type="button">Vincular con VAT</button>
+        </div>
+
+        <div id="vaccineList" class="vaccine-list"></div>
+        <div id="emptyVaccines" class="empty-inline">
+          <p>No hay vacunas capturadas todavía.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="viewVaccine" class="view">
+      <div class="card">
+        <button class="back" data-back="card" type="button">← Cartilla</button>
+        <h2>Registrar antecedente de vacuna</h2>
+        <div class="notice">
+          Este registro quedará marcado como <span class="status family">Capturado por la familia</span>.
+        </div>
+        <form id="vaccineForm" class="form-grid">
+          <label>Vacuna
+            <select id="vaccineName" required>
+              <option value="">Seleccionar vacuna</option>
+              <option>BCG</option>
+              <option>Hepatitis B</option>
+              <option>Hexavalente</option>
+              <option>Rotavirus</option>
+              <option>Neumococo</option>
+              <option>SRP</option>
+              <option>Influenza</option>
+              <option>COVID-19</option>
+              <option>VPH</option>
+              <option>TD / Td</option>
+              <option>TDPA / Tdap</option>
+              <option>Otra</option>
+            </select>
+          </label>
+          <div class="two-col">
+            <label>Dosis
+              <input id="vaccineDose" placeholder="Ej. 1ª, refuerzo">
+            </label>
+            <label>Fecha de aplicación
+              <input id="vaccineDate" type="date" required>
+            </label>
+          </div>
+          <label>Lote <span class="optional">(opcional)</span>
+            <input id="vaccineLot" placeholder="Si aparece en la cartilla">
+          </label>
+          <label>Institución / lugar <span class="optional">(opcional)</span>
+            <input id="vaccineInstitution" placeholder="Ej. Centro de Salud">
+          </label>
+          <label>Notas <span class="optional">(opcional)</span>
+            <textarea id="vaccineNotes" rows="3" placeholder="Observaciones"></textarea>
+          </label>
+          <button class="primary full" type="submit">Guardar antecedente</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="viewLink" class="view">
+      <div class="card">
+        <button class="back" data-back="home" type="button">← Regresar</button>
+        <h2>Vincular con Vacunas a Tiempo</h2>
+        <p class="muted">En la siguiente fase conectaremos aquí el lector del QR actual y el folio del Portal Familiar.</p>
+        <div class="qr-demo">▦</div>
+        <label>Folio / código
+          <input id="linkCode" placeholder="VAT-XXXXXX">
+        </label>
+        <button id="btnMockLink" class="secondary full" type="button">Probar vinculación (demo)</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="./app.js"></script>
+</body>
+</html>
