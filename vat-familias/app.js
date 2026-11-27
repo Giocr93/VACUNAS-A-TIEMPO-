@@ -76,7 +76,9 @@ qs('#memberForm').onsubmit=e=>{
   state.members.push(m);currentMemberId=m.id;save();e.target.reset();show('card');toast('Cartilla creada');
 };
 
-qs('#btnAddVaccine').onclick=()=>show('vaccine');
+qs('#btnAddVaccine').onclick=()=>show('captureMode');
+qs('#btnAssistedMode').onclick=()=>{toast('El asistente paso a paso se construye en la siguiente fase');show('vaccine')};
+qs('#btnQuickMode').onclick=()=>show('vaccine');
 qs('#btnLinkMember').onclick=()=>show('link');
 
 qs('#vaccineForm').onsubmit=e=>{
