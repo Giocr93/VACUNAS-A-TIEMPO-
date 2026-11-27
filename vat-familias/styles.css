@@ -28,3 +28,7 @@ button{cursor:pointer}.shell{max-width:820px;margin:auto;padding:16px 16px 48px}
 .wizard-field{display:grid;gap:6px;font-weight:700;margin:16px 0}.wizard-field input{width:100%;border:1px solid #bfd3cf;border-radius:12px;padding:13px;background:#fff}
 .summary-card{background:var(--soft);border-radius:16px;padding:16px;display:grid;gap:10px;margin:14px 0}.summary-row{display:flex;justify-content:space-between;gap:14px}.summary-row span:first-child{color:var(--muted)}.summary-row strong{text-align:right}
 @media(max-width:600px){.choice-grid,.choice-list{grid-template-columns:1fr}.wizard-step h3{font-size:22px}}
+
+.divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;margin:18px 0}
+.divider:before,.divider:after{content:"";height:1px;background:var(--line);flex:1}
+#linkQrText{width:100%;border:1px solid #bfd3cf;border-radius:12px;padding:12px;background:#fff;color:var(--ink);margin-top:6px}
