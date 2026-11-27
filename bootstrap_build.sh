@@ -287,4 +287,18 @@ PY
 test -f dist/index.html
 test -f dist/js/modules/module-28-vat-v19291-family-portal.js
 
+# Incluir módulos nuevos de la rama de desarrollo sin tocar la app base descargada.
+if [ -d "shared" ]; then
+  rm -rf dist/shared
+  cp -R shared dist/shared
+fi
+if [ -d "vat-familias" ]; then
+  rm -rf dist/vat-familias
+  cp -R vat-familias dist/vat-familias
+fi
+if [ -d "vat-profesional" ]; then
+  rm -rf dist/vat-profesional
+  cp -R vat-profesional dist/vat-profesional
+fi
+
 echo "VAT v2.3.4.26 lista"
