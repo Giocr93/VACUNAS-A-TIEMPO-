@@ -1,7 +1,7 @@
-const CACHE='vat-familias-mvp-v3';
+const CACHE='vat-familias-mvp-v4';
 const ASSETS=[
   './','./index.html','./styles.css','./app.js','./manifest.webmanifest',
-  '../shared/vat-clinical-engine.js'
+  '../shared/vat-clinical-engine.js','./vendor/jsQR.js'
 ];
 
 self.addEventListener('install',event=>{
