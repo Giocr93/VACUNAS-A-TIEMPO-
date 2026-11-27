@@ -258,6 +258,13 @@
         <div id="wizardStep6" class="wizard-step">
           <h3>Revisa antes de guardar</h3>
           <div id="assistSummary" class="summary-card"></div>
+          <div class="evidence-picker">
+            <strong>¿Quieres agregar una foto de la cartilla?</strong>
+            <p class="muted">Es opcional, pero puede facilitar la verificación.</p>
+            <label class="photo-button" for="assistEvidence">📷 Tomar foto / Elegir foto</label>
+            <input id="assistEvidence" class="file-hidden" type="file" accept="image/*" capture="environment">
+            <img id="assistEvidencePreview" class="evidence-preview hidden" alt="Vista previa de la cartilla">
+          </div>
           <div class="stack">
             <button id="assistSave" class="primary" type="button">Sí, guardar</button>
             <button id="assistEdit" class="secondary" type="button">Corregir</button>
@@ -308,6 +315,13 @@
           <label>Notas <span class="optional">(opcional)</span>
             <textarea id="vaccineNotes" rows="3" placeholder="Observaciones"></textarea>
           </label>
+          <div class="evidence-picker">
+            <strong>Foto de la cartilla <span class="optional">(opcional)</span></strong>
+            <p class="muted">Ayuda al personal de salud a revisar este antecedente.</p>
+            <label class="photo-button" for="quickEvidence">📷 Tomar foto / Elegir foto</label>
+            <input id="quickEvidence" class="file-hidden" type="file" accept="image/*" capture="environment">
+            <img id="quickEvidencePreview" class="evidence-preview hidden" alt="Vista previa de la cartilla">
+          </div>
           <button class="primary full" type="submit">Guardar antecedente</button>
         </form>
       </div>
