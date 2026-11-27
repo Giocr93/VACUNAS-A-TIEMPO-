@@ -32,3 +32,6 @@ button{cursor:pointer}.shell{max-width:820px;margin:auto;padding:16px 16px 48px}
 .divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;margin:18px 0}
 .divider:before,.divider:after{content:"";height:1px;background:var(--line);flex:1}
 #linkQrText{width:100%;border:1px solid #bfd3cf;border-radius:12px;padding:12px;background:#fff;color:var(--ink);margin-top:6px}
+
+.evidence-picker{border:1px dashed #a9c9c3;border-radius:15px;padding:14px;background:#fbfefd}
+.evidence-picker p{margin:5px 0 11px}.photo-button{display:inline-block;background:var(--soft);color:var(--brand);border:1px solid #b9d9d3;border-radius:13px;padding:11px 14px;font-weight:800;cursor:pointer}.file-hidden{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}.evidence-preview{display:block;width:100%;max-height:320px;object-fit:contain;border-radius:12px;margin-top:12px;border:1px solid var(--line);background:#fff}
