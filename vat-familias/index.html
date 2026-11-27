@@ -50,25 +50,33 @@
             <input id="accountPhone" inputmode="tel" autocomplete="tel" placeholder="10 dígitos">
           </label>
           <label>Correo
-            <input id="accountEmail" type="email" autocomplete="email" placeholder="correo@ejemplo.com">
+            <input id="accountEmail" type="email" autocomplete="email" placeholder="correo@ejemplo.com" required>
+          </label>
+          <label>Contraseña
+            <input id="accountPassword" type="password" autocomplete="new-password" minlength="6" placeholder="Mínimo 6 caracteres" required>
           </label>
           <label class="check">
             <input id="accountConsent" type="checkbox" required>
             <span>Acepto usar VAT Familias para organizar información de vacunación familiar.</span>
           </label>
-          <button class="primary full" type="submit">Continuar</button>
+          <button class="primary full" type="submit">Crear cuenta</button>
+          <button id="btnExistingAccount" class="secondary full" type="button">Ya tengo cuenta · Iniciar sesión</button>
         </form>
       </div>
     </section>
 
     <section id="viewHome" class="view">
+      <div id="authState" class="notice hidden"></div>
       <div class="home-head">
         <div>
           <p class="eyebrow">MI FAMILIA</p>
           <h1 id="helloTitle">Hola</h1>
           <p class="muted">Selecciona una cartilla o agrega un integrante.</p>
         </div>
-        <button id="btnAddMemberTop" class="primary compact" type="button">+ Agregar hijo</button>
+        <div class="stack-inline">
+          <button id="btnAddMemberTop" class="primary compact" type="button">+ Agregar hijo</button>
+          <button id="btnLogout" class="ghost compact" type="button">Cerrar sesión</button>
+        </div>
       </div>
 
       <div id="membersList" class="members-grid"></div>
@@ -339,6 +347,7 @@
   </main>
 
   <div id="toast" class="toast" role="status"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./app.js"></script>
 </body>
 </html>
