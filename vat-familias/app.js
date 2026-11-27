@@ -32,8 +32,72 @@ function isOfflineError(err){
   const msg=String(err?.message||err||'').toLowerCase();
   return !navigator.onLine || msg.includes('fetch') || msg.includes('network') || msg.includes('failed to fetch');
 }
+
+const EVIDENCE_DB='vat_familias_offline_v1';
+const EVIDENCE_STORE='pending_evidence';
+
+function openEvidenceDb(){
+  return new Promise((resolve,reject)=>{
+    if(!('indexedDB' in window)){reject(new Error('IndexedDB no disponible'));return}
+    const req=indexedDB.open(EVIDENCE_DB,1);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(EVIDENCE_STORE)){
+        const store=db.createObjectStore(EVIDENCE_STORE,{keyPath:'id'});
+        store.createIndex('entryId','entryId',{unique:false});
+      }
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error||new Error('No se pudo abrir almacenamiento offline'));
+  });
+}
+
+async function evidenceStorePut(record){
+  const db=await openEvidenceDb();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(EVIDENCE_STORE,'readwrite');
+    tx.objectStore(EVIDENCE_STORE).put(record);
+    tx.oncomplete=()=>{db.close();resolve(record)};
+    tx.onerror=()=>{db.close();reject(tx.error||new Error('No se pudo guardar la evidencia offline'))};
+  });
+}
+
+async function evidenceStoreAll(){
+  const db=await openEvidenceDb();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(EVIDENCE_STORE,'readonly');
+    const req=tx.objectStore(EVIDENCE_STORE).getAll();
+    req.onsuccess=()=>resolve(req.result||[]);
+    req.onerror=()=>reject(req.error||new Error('No se pudo leer la cola de evidencias'));
+    tx.oncomplete=()=>db.close();
+  });
+}
+
+async function evidenceStoreDelete(recordId){
+  const db=await openEvidenceDb();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(EVIDENCE_STORE,'readwrite');
+    tx.objectStore(EVIDENCE_STORE).delete(recordId);
+    tx.oncomplete=()=>{db.close();resolve(true)};
+    tx.onerror=()=>{db.close();reject(tx.error||new Error('No se pudo limpiar la evidencia sincronizada'))};
+  });
+}
+
+async function refreshEvidencePendingCount(){
+  try{
+    const rows=await evidenceStoreAll();
+    state.pendingEvidenceCount=rows.length;
+    save();
+    updateConnectionBadge();
+    return rows.length;
+  }catch{
+    return Number(state.pendingEvidenceCount||0);
+  }
+}
+
 function pendingSyncCount(){
-  return state.members.reduce((n,m)=>n+(m.syncStatus==='pending'?1:0)+(m.vaccines||[]).filter(v=>v.syncStatus==='pending').length,0);
+  return state.members.reduce((n,m)=>n+(m.syncStatus==='pending'?1:0)+(m.vaccines||[]).filter(v=>v.syncStatus==='pending').length,0)
+    + Number(state.pendingEvidenceCount||0);
 }
 
 function show(name){
@@ -106,7 +170,7 @@ function unifiedRecordsFromInput(input,member){
 async function refreshUnifiedCard(member){
   const memberId=member.id;
   try{
-    const input=await getScheduleInput(member);
+    const input=preloadedInput||await getScheduleInput(member);
     if(currentMemberId!==memberId)return;
     const records=unifiedRecordsFromInput(input,member);
     member.cardCache=records;
@@ -212,25 +276,42 @@ qs('#vaccineForm').onsubmit=async e=>{
     captureMode:'rapido'
   };
   v.syncStatus='pending';
-  let evidenceSaved=false;
   const hadEvidence=!!quickEvidenceFile;
+  let evidenceResult={saved:false,queued:false};
+
   try{
     if(backendReady && navigator.onLine)v=await saveVaccineToSupabase(m,v);
   }catch(err){
     if(!isOfflineError(err)){toast(err.message||'No se pudo guardar la vacuna');return}
     v.syncStatus='pending';
   }
-  if(v.syncStatus==='synced' && quickEvidenceFile){
-    try{await uploadVaccineEvidence(v.id,quickEvidenceFile);evidenceSaved=true}
-    catch(photoErr){console.warn(photoErr);toast('La vacuna se guardó, pero la foto no pudo subirse')}
+
+  if(quickEvidenceFile){
+    try{
+      evidenceResult=await persistEvidenceForVaccine(
+        v.id,
+        m.id,
+        quickEvidenceFile,
+        v.syncStatus==='synced' && navigator.onLine
+      );
+    }catch(photoErr){
+      console.warn(photoErr);
+      toast('La vacuna se guardó, pero no pude conservar la foto');
+    }
   }
+
   m.vaccines=m.vaccines||[];
-  m.vaccines.push({...v,evidenceCount:evidenceSaved?1:0,evidencePending:hadEvidence&&!evidenceSaved});
+  m.vaccines.push({
+    ...v,
+    evidenceCount:evidenceResult.saved?1:0,
+    evidencePending:evidenceResult.queued
+  });
   save();updateConnectionBadge();e.target.reset();clearEvidenceInput('quick');show('card');
-  if(v.syncStatus==='pending'){
-    toast(hadEvidence?'Vacuna guardada offline. La dosis se sincronizará; la foto deberá agregarse con conexión.':'Vacuna guardada offline; se sincronizará automáticamente.');
+
+  if(v.syncStatus==='pending' || evidenceResult.queued){
+    toast(hadEvidence?'Vacuna y foto guardadas en este dispositivo; se sincronizarán al volver internet.':'Vacuna guardada offline; se sincronizará automáticamente.');
   }else if(!hadEvidence)toast('Vacuna guardada en tu cuenta');
-  else if(evidenceSaved)toast('Vacuna y foto guardadas');
+  else if(evidenceResult.saved)toast('Vacuna y foto guardadas');
 };
 
 function parsePortalCredentials(raw){
@@ -371,6 +452,7 @@ qs('#btnReset').onclick=()=>{
 
 if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 if(state.account)show('home');else show('welcome');
+refreshEvidencePendingCount().catch(()=>{});
 
 
 function startAssisted(){
@@ -463,25 +545,42 @@ qs('#assistSave').onclick=async()=>{
     captureMode:'asistido'
   };
   v.syncStatus='pending';
-  let evidenceSaved=false;
   const hadEvidence=!!assistEvidenceFile;
+  let evidenceResult={saved:false,queued:false};
+
   try{
     if(backendReady && navigator.onLine)v=await saveVaccineToSupabase(m,v);
   }catch(err){
     if(!isOfflineError(err)){toast(err.message||'No se pudo guardar el antecedente');return}
     v.syncStatus='pending';
   }
-  if(v.syncStatus==='synced' && assistEvidenceFile){
-    try{await uploadVaccineEvidence(v.id,assistEvidenceFile);evidenceSaved=true}
-    catch(photoErr){console.warn(photoErr);toast('El antecedente se guardó, pero la foto no pudo subirse')}
+
+  if(assistEvidenceFile){
+    try{
+      evidenceResult=await persistEvidenceForVaccine(
+        v.id,
+        m.id,
+        assistEvidenceFile,
+        v.syncStatus==='synced' && navigator.onLine
+      );
+    }catch(photoErr){
+      console.warn(photoErr);
+      toast('El antecedente se guardó, pero no pude conservar la foto');
+    }
   }
+
   m.vaccines=m.vaccines||[];
-  m.vaccines.push({...v,evidenceCount:evidenceSaved?1:0,evidencePending:hadEvidence&&!evidenceSaved});
+  m.vaccines.push({
+    ...v,
+    evidenceCount:evidenceResult.saved?1:0,
+    evidencePending:evidenceResult.queued
+  });
   save();updateConnectionBadge();clearEvidenceInput('assist');show('card');
-  if(v.syncStatus==='pending'){
-    toast(hadEvidence?'Antecedente guardado offline. Se sincronizará; la foto deberá agregarse con conexión.':'Antecedente guardado offline; se sincronizará automáticamente.');
+
+  if(v.syncStatus==='pending' || evidenceResult.queued){
+    toast(hadEvidence?'Antecedente y foto guardados en este dispositivo; se sincronizarán al volver internet.':'Antecedente guardado offline; se sincronizará automáticamente.');
   }else if(!hadEvidence)toast('Antecedente guardado en tu cuenta');
-  else if(evidenceSaved)toast('Antecedente y foto guardados');
+  else if(evidenceResult.saved)toast('Antecedente y foto guardados');
 };
 
 
@@ -702,6 +801,9 @@ async function syncPendingLocalData(){
       }
     }
   }
+
+  if(await syncPendingEvidenceQueue())changed=true;
+
   if(changed){
     save();
     updateConnectionBadge();
@@ -801,10 +903,19 @@ async function sha256Hex(blob){
   return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
-async function uploadVaccineEvidence(entryId,file){
-  if(!file || !backendReady || !session?.user || !entryId)return null;
-  const blob=await prepareEvidenceImage(file);
+async function uploadPreparedEvidenceBlob(entryId,blob){
+  if(!blob || !backendReady || !session?.user || !entryId)return null;
   const uid=session.user.id;
+  const sha=await sha256Hex(blob);
+
+  const {data:existing,error:existingErr}=await sb.from('family_evidence')
+    .select('id,storage_path')
+    .eq('vaccine_entry_id',entryId)
+    .eq('sha256',sha)
+    .maybeSingle();
+  if(existingErr)throw existingErr;
+  if(existing)return existing;
+
   const fileId=crypto.randomUUID?.()||id();
   const path=uid+'/'+entryId+'/'+fileId+'.jpg';
   const {error:upErr}=await sb.storage.from('family-evidence').upload(path,blob,{
@@ -813,7 +924,7 @@ async function uploadVaccineEvidence(entryId,file){
     cacheControl:'3600'
   });
   if(upErr)throw upErr;
-  const sha=await sha256Hex(blob);
+
   const {data,error}=await sb.from('family_evidence').insert({
     vaccine_entry_id:entryId,
     storage_bucket:'family-evidence',
@@ -828,6 +939,96 @@ async function uploadVaccineEvidence(entryId,file){
     throw error;
   }
   return data;
+}
+
+async function uploadVaccineEvidence(entryId,file){
+  if(!file)return null;
+  const blob=await prepareEvidenceImage(file);
+  return uploadPreparedEvidenceBlob(entryId,blob);
+}
+
+async function queueEvidenceOffline(entryId,memberId,file){
+  if(!file || !entryId)return null;
+  const blob=await prepareEvidenceImage(file);
+  const record={
+    id:id(),
+    entryId,
+    memberId:memberId||null,
+    ownerUserId:session?.user?.id||null,
+    blob,
+    size:blob.size,
+    createdAt:new Date().toISOString(),
+    attempts:0
+  };
+  await evidenceStorePut(record);
+  await refreshEvidencePendingCount();
+  return record;
+}
+
+function markLocalEvidenceSynced(entryId){
+  for(const member of state.members){
+    const vaccine=(member.vaccines||[]).find(v=>v.id===entryId);
+    if(vaccine){
+      vaccine.evidencePending=false;
+      vaccine.evidenceCount=Number(vaccine.evidenceCount||0)+1;
+      break;
+    }
+  }
+  save();
+}
+
+async function syncPendingEvidenceQueue(){
+  if(!backendReady || !sb || !session?.user || !navigator.onLine)return false;
+  let changed=false;
+  const rows=await evidenceStoreAll().catch(()=>[]);
+  for(const row of rows){
+    if(row.ownerUserId && row.ownerUserId!==session.user.id)continue;
+    const member=state.members.find(m=>m.id===row.memberId);
+    const vaccine=member?.vaccines?.find(v=>v.id===row.entryId);
+    if(!vaccine || vaccine.syncStatus==='pending')continue;
+    try{
+      await uploadPreparedEvidenceBlob(row.entryId,row.blob);
+      await evidenceStoreDelete(row.id);
+      markLocalEvidenceSynced(row.entryId);
+      changed=true;
+    }catch(err){
+      if(isOfflineError(err))break;
+      console.warn('No se pudo sincronizar evidencia',err);
+      try{
+        row.attempts=Number(row.attempts||0)+1;
+        row.lastError=String(err?.message||err||'error').slice(0,180);
+        await evidenceStorePut(row);
+      }catch{}
+    }
+  }
+  await refreshEvidencePendingCount();
+  return changed;
+}
+
+async function persistEvidenceForVaccine(entryId,memberId,file,canUpload){
+  if(!file)return {saved:false,queued:false};
+  const blob=await prepareEvidenceImage(file);
+  if(canUpload){
+    try{
+      await uploadPreparedEvidenceBlob(entryId,blob);
+      return {saved:true,queued:false};
+    }catch(err){
+      console.warn('Evidencia irá a cola offline',err);
+    }
+  }
+  const record={
+    id:id(),
+    entryId,
+    memberId:memberId||null,
+    ownerUserId:session?.user?.id||null,
+    blob,
+    size:blob.size,
+    createdAt:new Date().toISOString(),
+    attempts:0
+  };
+  await evidenceStorePut(record);
+  await refreshEvidencePendingCount();
+  return {saved:false,queued:true};
 }
 
 function clearEvidenceInput(kind){
