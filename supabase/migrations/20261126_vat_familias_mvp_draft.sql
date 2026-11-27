@@ -349,4 +349,5 @@ end;
 $$;
 
 revoke all on function public.family_app_link_from_portal(uuid,text,text) from public;
+revoke execute on function public.family_app_link_from_portal(uuid,text,text) from anon;
 grant execute on function public.family_app_link_from_portal(uuid,text,text) to authenticated;
