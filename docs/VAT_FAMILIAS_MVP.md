@@ -57,3 +57,44 @@ Los QR/folios existentes deben seguir funcionando. Cuando una familia llegue por
 - Bandeja profesional de verificación.
 - Invitación de segundo tutor/cuidador.
 - App Store / Google Play mediante empaquetado posterior si se decide.
+
+
+## Principio de diseño: captura asistida
+
+VAT Familias debe estar diseñado para personas con poca experiencia tecnológica. La captura no debe sentirse como llenar un formulario clínico.
+
+### Flujo recomendado
+
+1. Elegir al hijo.
+2. Tocar **Agregar vacuna**.
+3. La app pregunta: **¿Tienes la cartilla a la mano?**
+   - Sí, tengo la cartilla.
+   - No, quiero registrar lo que recuerdo.
+4. Si tiene cartilla:
+   - opción principal: **Tomar foto de la cartilla**;
+   - opción secundaria: **Capturar manualmente**.
+5. La app propone los datos detectados o guía una pregunta por pantalla:
+   - ¿Qué vacuna aparece?
+   - ¿Qué fecha tiene?
+   - ¿Dice primera, segunda, tercera o refuerzo?
+   - ¿Ves un número de lote? → Sí / No.
+6. Antes de guardar, mostrar una tarjeta resumen grande:
+   - vacuna;
+   - dosis;
+   - fecha;
+   - lote si existe;
+   - origen: Capturado por la familia.
+7. Botones grandes:
+   - **Sí, guardar**
+   - **Corregir**
+
+### Reglas de simplicidad
+
+- Una pregunta principal por pantalla.
+- Botones grandes y texto cotidiano, no técnico.
+- No exigir lote, fabricante, vía, sitio ni institución para poder guardar.
+- Mostrar **No sé / No aparece** como opción válida.
+- Autocompletar lo posible según edad y esquema, pero nunca inventar datos.
+- Las sugerencias de la app deben confirmarse por el usuario.
+- Mantener un **Modo manual avanzado** para quienes sí quieran capturar más detalles.
+- La foto de cartilla debe ser el camino preferido en una fase posterior.
