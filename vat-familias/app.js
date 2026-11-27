@@ -100,8 +100,22 @@ function pendingSyncCount(){
     + Number(state.pendingEvidenceCount||0);
 }
 
+const PRIVATE_VIEWS=new Set(['home','member','card','captureMode','assisted','vaccine']);
+
+function hasFamilySession(){
+  return !!session?.user;
+}
+
 function show(name){
+  if(PRIVATE_VIEWS.has(name) && !hasFamilySession()){
+    name='welcome';
+  }
   qsa('.view').forEach(v=>v.classList.remove('active'));
+  const target=qs('#view'+name[0].toUpperCase()+name.slice(1));
+  if(!target){
+    console.warn('Vista no encontrada',name);
+    name='welcome';
+  }
   qs('#view'+name[0].toUpperCase()+name.slice(1)).classList.add('active');
   if(name==='home') renderHome();
   if(name==='card') renderCard();
@@ -211,16 +225,23 @@ function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;',
 qs('#btnStart').onclick=()=>show('account');
 qs('#btnLogin').onclick=()=>show('login');
 qs('#btnLinkExisting').onclick=()=>{
-  if(!state.account){
-    toast('Primero crea tu cuenta o inicia sesión; después podrás vincular una cartilla con QR.');
+  if(!hasFamilySession()){
+    toast('Primero inicia sesión o crea tu cuenta; después podrás vincular una cartilla con QR.');
     show('login');
     return;
   }
   show('link');
 };
 qs('#btnAddMemberTop').onclick=qs('#btnAddMemberEmpty').onclick=()=>show('member');
-qs('#btnLinkFromHome').onclick=()=>show('link');
-qsa('.back').forEach(b=>b.onclick=()=>show(b.dataset.back));
+qs('#btnLinkFromHome').onclick=()=>hasFamilySession()?show('link'):show('welcome');
+qsa('.back').forEach(b=>b.onclick=()=>{
+  if(b.closest('#viewLink')){
+    stopQrScanner();
+    show(hasFamilySession()?'home':'welcome');
+    return;
+  }
+  show(b.dataset.back);
+});
 
 qs('#accountForm').onsubmit=async e=>{
   e.preventDefault();
@@ -469,6 +490,11 @@ qs('#btnStopQr')?.addEventListener('click',stopQrScanner);
 
 
 qs('#btnMockLink').onclick=async()=>{
+  if(!hasFamilySession()){
+    toast('Inicia sesión antes de vincular una cartilla');
+    show('login');
+    return;
+  }
   const folio=qs('#linkFolio').value.trim();
   const token=qs('#linkToken').value.trim();
   if(!folio || !token){toast('Necesito folio y código de acceso');return}
@@ -493,7 +519,7 @@ qs('#btnReset').onclick=()=>{
 };
 
 if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
-if(state.account)show('home');else show('welcome');
+show('welcome');
 refreshEvidencePendingCount().catch(()=>{});
 
 
@@ -880,11 +906,27 @@ async function logoutFamily(){
 
 (async function bootBackend(){
   try{
+    if(sb){
+      const {data:{session:s}}=await sb.auth.getSession();
+      session=s||null;
+    }
+
+    if(session?.user && state.account){
+      show('home');
+    }else{
+      show('welcome');
+    }
+
     const ok=await syncAccountFromSupabase();
     if(ok)show('home');
   }catch(e){
     console.warn('VAT Familias backend',e);
-    toast('No se pudo conectar con la nube; seguimos en modo local');
+    if(session?.user && state.account){
+      show('home');
+      toast('Sin conexión con la nube; usando la copia de este dispositivo');
+    }else{
+      show('welcome');
+    }
   }
 })();
 
